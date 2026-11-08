@@ -190,15 +190,42 @@ def save_notifications(
 
 # ---------- Вход и регистрация ----------
 # В макете настоящей авторизации нет: проверяем только заполнение полей.
+# Регистрация пациента — по коду приглашения от врача; без кода — заявка на проверку.
 
 def _redirect(url: str) -> Response:
     """HTMX сам перейдёт на страницу, увидев заголовок HX-Redirect."""
     return Response(status_code=204, headers={"HX-Redirect": url})
 
 
+def _normalize_code(raw: str) -> str:
+    """«pls 4827», «PLS4827», «4827» -> «PLS-4827»."""
+    digits = "".join(c for c in raw if c.isdigit())
+    return f"PLS-{digits}" if digits else ""
+
+
+def _check_code(raw: str) -> tuple[dict | None, dict | None, str]:
+    """Возвращает (код, врач, текст ошибки)."""
+    code = _normalize_code(raw)
+    if not code:
+        return None, None, "Введите код с листка, который вам дали в больнице"
+    invite = next((c for c in mock_data.INVITE_CODES if c["code"] == code), None)
+    if not invite:
+        return None, None, "Код не найден. Проверьте буквы и цифры или позвоните в регистратуру"
+    if invite["status"] == "used":
+        return None, None, "По этому коду уже зарегистрировались. Если это были не вы, позвоните в регистратуру"
+    if invite["status"] in ("expired", "revoked"):
+        return None, None, "Срок действия кода закончился. Попросите новый код у врача или в регистратуре"
+    doctor = next(d for d in mock_data.DOCTORS if d["id"] == invite["doctor_id"])
+    return invite, doctor, ""
+
+
+def _auth_context(**extra) -> dict:
+    return {"form": {}, "errors": {}, "registry_phone": mock_data.REGISTRY_PHONE, **extra}
+
+
 @app.get("/login", response_class=HTMLResponse)
 def login_page(request: Request):
-    return templates.TemplateResponse(request, "auth/login.html", {"form": {}, "errors": {}})
+    return templates.TemplateResponse(request, "auth/login.html", _auth_context())
 
 
 @app.post("/login", response_class=HTMLResponse)
@@ -214,36 +241,44 @@ def login(request: Request, email: str = Form(""), password: str = Form("")):
         errors["email"] = "Не нашли такую почту. Проверьте её или зарегистрируйтесь"
     if errors:
         return templates.TemplateResponse(
-            request, "partials/login_form.html", {"form": {"email": email}, "errors": errors}
+            request, "partials/login_form.html", _auth_context(form={"email": email}, errors=errors)
         )
+    if user["status"] == "pending":
+        return _redirect("/pending")
     return _redirect(mock_data.ROLE_HOME[user["role"]])
 
 
 @app.get("/register", response_class=HTMLResponse)
-def register_page(request: Request):
-    return templates.TemplateResponse(request, "auth/register.html", {"form": {}, "errors": {}})
+def register_page(request: Request, code: str = ""):
+    """Регистрация по коду. Ссылка из QR-кода: /register?code=PLS-4827 — код уже вписан."""
+    ctx = _auth_context(mode="code", form={"code": _normalize_code(code)})
+    if code:
+        _, ctx["doctor"], ctx["code_error"] = _check_code(code)
+    return templates.TemplateResponse(request, "auth/register.html", ctx)
 
 
-@app.post("/register", response_class=HTMLResponse)
-def register(
-    request: Request,
-    last_name: str = Form(""),
-    first_name: str = Form(""),
-    patronymic: str = Form(""),
-    phone: str = Form(""),
-    email: str = Form(""),
-    password: str = Form(""),
-    password2: str = Form(""),
-    consent: str = Form(""),
-):
-    form = {"last_name": last_name.strip(), "first_name": first_name.strip(),
-            "patronymic": patronymic.strip(), "phone": phone.strip(),
-            "email": email.strip().lower(), "consent": bool(consent)}
+@app.get("/register/no-code", response_class=HTMLResponse)
+def register_no_code_page(request: Request):
+    return templates.TemplateResponse(request, "auth/register.html", _auth_context(mode="request"))
+
+
+@app.post("/register/check-code", response_class=HTMLResponse)
+def check_code(request: Request, code: str = Form("")):
+    """Проверка кода сразу при вводе: показываем врача или ошибку."""
+    _, doctor, error = _check_code(code)
+    return templates.TemplateResponse(
+        request, "partials/code_status.html", {"doctor": doctor, "code_error": error if code.strip() else ""}
+    )
+
+
+def _validate_profile(form: dict, password: str, password2: str) -> dict:
     errors = {}
     if not form["last_name"]:
         errors["last_name"] = "Напишите фамилию"
     if not form["first_name"]:
         errors["first_name"] = "Напишите имя"
+    if not form["birth_date"]:
+        errors["birth_date"] = "Укажите дату рождения"
     if sum(c.isdigit() for c in form["phone"]) < 10:
         errors["phone"] = "Напишите номер телефона полностью, например +7 917 555-12-34"
     if "@" not in form["email"]:
@@ -256,18 +291,72 @@ def register(
         errors["password2"] = "Пароли не совпадают"
     if not form["consent"]:
         errors["consent"] = "Без согласия мы не можем хранить ваши данные"
+    return errors
+
+
+@app.post("/register", response_class=HTMLResponse)
+def register(
+    request: Request,
+    mode: str = Form("code"),
+    code: str = Form(""),
+    oms: str = Form(""),
+    last_name: str = Form(""),
+    first_name: str = Form(""),
+    patronymic: str = Form(""),
+    birth_date: str = Form(""),
+    phone: str = Form(""),
+    email: str = Form(""),
+    password: str = Form(""),
+    password2: str = Form(""),
+    consent: str = Form(""),
+):
+    mode = "request" if mode == "request" else "code"
+    form = {"code": _normalize_code(code) or code.strip(), "oms": oms.strip(),
+            "last_name": last_name.strip(), "first_name": first_name.strip(),
+            "patronymic": patronymic.strip(), "birth_date": birth_date,
+            "phone": phone.strip(), "email": email.strip().lower(), "consent": bool(consent)}
+    errors = _validate_profile(form, password, password2)
+
+    invite = doctor = None
+    if mode == "code":
+        invite, doctor, code_error = _check_code(code)
+        if code_error:
+            errors["code"] = code_error
+    elif sum(c.isdigit() for c in form["oms"]) != 16:
+        errors["oms"] = "В полисе ОМС 16 цифр. Они есть на лицевой стороне полиса"
 
     if errors:
         return templates.TemplateResponse(
-            request, "partials/register_form.html", {"form": form, "errors": errors}
+            request, "partials/register_form.html",
+            _auth_context(mode=mode, form=form, errors=errors, doctor=doctor),
         )
 
-    # Новый пациент: в макете просто заменяем тестового пациента и очищаем его лекарства.
-    mock_data.USERS.append({"email": form["email"], "role": "patient"})
+    full_name = " ".join(x for x in (form["last_name"], form["first_name"], form["patronymic"]) if x)
+
+    if mode == "request":
+        mock_data.USERS.append({"email": form["email"], "role": "patient", "status": "pending"})
+        mock_data.REQUESTS.append({
+            "email": form["email"], "name": full_name, "birth_date": form["birth_date"],
+            "phone": form["phone"], "oms": form["oms"], "submitted": "сегодня", "status": "pending",
+        })
+        return _redirect("/pending")
+
+    # Регистрация по коду: пациент сразу закреплён за врачом из кода.
+    # В макете просто заменяем тестового пациента и очищаем его лекарства.
+    invite["status"] = "used"
+    invite["patient_hint"] = full_name
+    mock_data.USERS.append({"email": form["email"], "role": "patient", "status": "active"})
     mock_data.PATIENT.update(
         last_name=form["last_name"], first_name=form["first_name"],
         patronymic=form["patronymic"], phone=form["phone"], email=form["email"],
+        doctor=doctor["name"], doctor_role=doctor["role"],
     )
     mock_data.SCHEDULE.clear()
     mock_data.TAKEN_TODAY.clear()
     return _redirect("/cabinet?welcome=1")
+
+
+@app.get("/pending", response_class=HTMLResponse)
+def pending_page(request: Request):
+    """Заявка без кода ждёт проверки администратором."""
+    return templates.TemplateResponse(request, "auth/pending.html", _auth_context())

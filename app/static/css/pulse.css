@@ -545,3 +545,65 @@ svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; 
   .auth-about__clinic { display: block; margin-top: 40px; color: var(--pulse-muted); }
   .auth-card { padding: 36px; }
 }
+
+/* ---------- Код приглашения и заявка ---------- */
+
+.field--code input {
+  font-size: 1.4rem !important;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+}
+.code-ok {
+  display: flex; align-items: flex-start; gap: 10px;
+  margin-top: 8px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--pulse-green-soft);
+  color: var(--pulse-green);
+  font-size: 1rem;
+  animation: pulse-appear .25s ease-out;
+}
+.code-ok svg { flex: none; width: 24px; height: 24px; stroke-width: 3; }
+.code-ok strong { color: var(--pulse-text); }
+.no-code-link {
+  display: inline-flex; align-items: center;
+  min-height: 48px; margin-top: 4px;
+  font-weight: 600;
+}
+
+.pending-icon {
+  width: 64px; height: 64px; margin-bottom: 12px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 20px;
+  background: var(--pulse-blue-soft); color: var(--pulse-blue);
+}
+.pending-icon svg { width: 36px; height: 36px; }
+.auth-card > p { margin-bottom: 12px; }
+.auth-card > .btn-second { margin-top: 20px; min-height: 56px; padding: 8px 12px; text-align: center; }
+
+.urgent {
+  margin-top: 24px;
+  padding: 16px;
+  border-radius: 14px;
+  background: var(--pulse-red-soft);
+}
+.urgent__title { font-size: 1.1rem; font-weight: 700; color: var(--pulse-red); margin: 0 0 12px; }
+.btn-sos {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  min-height: 64px;
+  border-radius: 14px;
+  background: var(--pulse-red); color: #fff;
+  font-size: 1.3rem; font-weight: 700;
+  text-decoration: none;
+}
+.btn-sos:hover { background: #a51d17; color: #fff; }
+.btn-sos svg { width: 28px; height: 28px; }
+.urgent__link {
+  display: flex; align-items: center; justify-content: center;
+  min-height: 48px; margin-top: 6px;
+  color: var(--pulse-red); font-weight: 600;
+}
+.call-reg { display: flex; flex-direction: column; align-items: center; line-height: 1.3; }
+.call-reg__num { white-space: nowrap; font-size: 1.15rem; }

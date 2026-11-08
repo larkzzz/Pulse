@@ -1,0 +1,32 @@
+{% extends "auth/layout.html" %}
+{% block title %}Заявка на проверке · Пульс{% endblock %}
+
+{% block auth_card %}
+<div class="pending-icon" aria-hidden="true">
+  <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>
+</div>
+<h1 class="auth-card__title" id="auth-title">Заявка на проверке</h1>
+<p>Администратор больницы сверит ваши данные и закрепит вас за врачом. Обычно это 1–2 рабочих дня.</p>
+<p>Когда всё будет готово, мы пришлём письмо на почту.</p>
+
+<a class="btn-second btn-link-like" href="tel:{{ registry_phone | replace(' ', '') | replace('-', '') }}">
+  <span class="call-reg">
+    <span>Позвонить в регистратуру</span>
+    <span class="call-reg__num">{{ registry_phone }}</span>
+  </span>
+</a>
+
+<section class="urgent" aria-labelledby="urgent-title">
+  <h2 class="urgent__title" id="urgent-title">Если стало плохо, не ждите</h2>
+  <a class="btn-sos" href="tel:112">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg>
+    Позвонить 112
+  </a>
+  <a class="urgent__link" href="/help">Где ближайший ФАП</a>
+</section>
+
+<div class="auth-switch">
+  <p>Нашёлся код из больницы?</p>
+  <a class="btn-ghost btn-link-like" href="/register">Зарегистрироваться по коду</a>
+</div>
+{% endblock %}

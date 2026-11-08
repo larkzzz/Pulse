@@ -2,12 +2,23 @@
 {% block title %}Регистрация · Пульс{% endblock %}
 
 {% block auth_card %}
+{% if mode == "request" %}
+<h1 class="auth-card__title" id="auth-title">Заявка без кода</h1>
+<p class="panel__hint">Заполните данные. Администратор больницы проверит их и закрепит вас за врачом. Обычно это 1–2 рабочих дня.</p>
+{% else %}
 <h1 class="auth-card__title" id="auth-title">Регистрация</h1>
-<p class="panel__hint">Для пациентов. Заполнение займёт пару минут.</p>
+<p class="panel__hint">Для пациентов Пестречинской ЦРБ. Код вам дали вместе с выпиской.</p>
+{% endif %}
+
 <div id="register-form">{% include "partials/register_form.html" %}</div>
 
 <div class="auth-switch">
+  {% if mode == "request" %}
+  <p>Нашёлся код из больницы?</p>
+  <a class="btn-second btn-link-like" href="/register">Зарегистрироваться по коду</a>
+  {% else %}
   <p>Уже есть учётная запись?</p>
   <a class="btn-second btn-link-like" href="/login">Войти</a>
+  {% endif %}
 </div>
 {% endblock %}

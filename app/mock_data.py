@@ -46,12 +46,38 @@ TAKEN_TODAY = {
     (1, "08:00"): "08:05",
 }
 
-# Учётные записи. Пациенты регистрируются сами, врачей и администратора заводит администратор.
+# Учётные записи. Пациенты регистрируются по коду приглашения или через заявку,
+# врачей и администратора заводит администратор.
+# status: "active" — работает, "pending" — заявка без кода ждёт проверки.
 # В макете пароль не проверяется: подойдёт любой непустой.
 USERS = [
-    {"email": "galina.smirnova@mail.ru", "role": "patient"},
-    {"email": "safin@pestrechi-crb.ru", "role": "doctor"},
-    {"email": "admin@pestrechi-crb.ru", "role": "admin"},
+    {"email": "galina.smirnova@mail.ru", "role": "patient", "status": "active"},
+    {"email": "petrov@mail.ru", "role": "patient", "status": "pending"},
+    {"email": "safin@pestrechi-crb.ru", "role": "doctor", "status": "active"},
+    {"email": "admin@pestrechi-crb.ru", "role": "admin", "status": "active"},
+]
+
+# Телефон регистратуры ЦРБ. Заглушка для макета, настоящий номер возьмём у больницы.
+REGISTRY_PHONE = "8 800 000-00-00"
+
+DOCTORS = [
+    {"id": 1, "name": "Сафин Ильдар Ринатович", "role": "врач-терапевт"},
+    {"id": 2, "name": "Гарипова Алсу Маратовна", "role": "врач-кардиолог"},
+]
+
+# Коды приглашения. Врач выдаёт код при выписке, код привязан к врачу.
+# status: "new" — не использован, "used" — использован, "revoked" — отменён, "expired" — истёк.
+INVITE_CODES = [
+    {"code": "PLS-4827", "doctor_id": 1, "patient_hint": "Иванов П. С.", "issued": "5 ноября", "expires": "5 декабря", "status": "new"},
+    {"code": "PLS-3159", "doctor_id": 2, "patient_hint": "Хасанова Р. И.", "issued": "7 ноября", "expires": "7 декабря", "status": "new"},
+    {"code": "PLS-1206", "doctor_id": 1, "patient_hint": "Смирнова Г. П.", "issued": "20 октября", "expires": "19 ноября", "status": "used"},
+    {"code": "PLS-0988", "doctor_id": 1, "patient_hint": "Николаев А. В.", "issued": "1 сентября", "expires": "1 октября", "status": "expired"},
+]
+
+# Заявки на регистрацию без кода. Их проверяет администратор.
+REQUESTS = [
+    {"email": "petrov@mail.ru", "name": "Петров Олег Иванович", "birth_date": "1951-03-14",
+     "phone": "+7 917 222-33-44", "oms": "1655 4321 0987 6543", "submitted": "8 ноября", "status": "pending"},
 ]
 
 # Куда попадает пользователь после входа.

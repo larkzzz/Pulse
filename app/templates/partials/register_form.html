@@ -1,12 +1,37 @@
 {% from "partials/macros.html" import field %}
 <form class="form-big" hx-post="/register" hx-target="#register-form" novalidate>
+  <input type="hidden" name="mode" value="{{ mode }}">
+
   {% if errors %}
   <p class="form-alert" role="alert">Проверьте поля, отмеченные красным.</p>
+  {% endif %}
+
+  {% if mode == "code" %}
+  <div class="field field--code">
+    <label for="code">Код из листка выписки</label>
+    <input id="code" name="code" value="{{ form.get('code', '') }}" placeholder="PLS-0000"
+           autocomplete="off" autocapitalize="characters" spellcheck="false"
+           hx-post="/register/check-code" hx-trigger="input changed delay:500ms, change"
+           hx-target="#code-status" hx-sync="this:replace"
+           aria-describedby="code-status"
+           {% if errors.get('code') %}aria-invalid="true"{% endif %}>
+    <div id="code-status" aria-live="polite">
+      {% with code_error = errors.get('code') or code_error %}{% include "partials/code_status.html" %}{% endwith %}
+    </div>
+    <a class="no-code-link" href="/register/no-code">У меня нет кода</a>
+  </div>
   {% endif %}
 
   {{ field("last_name", "Фамилия", form, errors, auto="family-name") }}
   {{ field("first_name", "Имя", form, errors, auto="given-name") }}
   {{ field("patronymic", "Отчество", form, errors, auto="additional-name", note="если есть") }}
+  {{ field("birth_date", "Дата рождения", form, errors, type="date", auto="bday") }}
+
+  {% if mode == "request" %}
+  {{ field("oms", "Номер полиса ОМС", form, errors, auto="off", placeholder="0000 0000 0000 0000",
+           hint="16 цифр на лицевой стороне полиса. Нужен, чтобы найти вас в базе больницы.") }}
+  {% endif %}
+
   {{ field("phone", "Телефон", form, errors, type="tel", auto="tel", placeholder="+7 900 000-00-00") }}
   {{ field("email", "Электронная почта", form, errors, type="email", auto="email", placeholder="name@mail.ru",
            hint="На почту будут приходить напоминания о лекарствах.") }}
@@ -23,5 +48,5 @@
     {% if errors.get('consent') %}<p class="field-error" id="consent-error">{{ errors.consent }}</p>{% endif %}
   </div>
 
-  <button type="submit" class="btn-main">Зарегистрироваться</button>
+  <button type="submit" class="btn-main">{% if mode == "request" %}Отправить заявку{% else %}Зарегистрироваться{% endif %}</button>
 </form>

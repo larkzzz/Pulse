@@ -1,0 +1,9 @@
+{# Что видно под полем кода: врач (код подошёл) или ошибка. #}
+{% if doctor %}
+<div class="code-ok" role="status">
+  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>
+  <span>Код подошёл. Ваш врач: <strong>{{ doctor.name }}</strong>, {{ doctor.role }}</span>
+</div>
+{% elif code_error %}
+<p class="field-error" id="code-error" role="alert">{{ code_error }}</p>
+{% endif %}
