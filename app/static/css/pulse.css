@@ -1,0 +1,204 @@
+/* Пульс: общие стили поверх Bootstrap.
+   Пациентский интерфейс: шрифт от 18px, кнопки от 48px, высокий контраст. */
+
+:root {
+  --pulse-bg: #f5f7fa;
+  --pulse-surface: #ffffff;
+  --pulse-text: #14202e;
+  --pulse-muted: #4a5868;
+  --pulse-border: #d9e0e8;
+
+  --pulse-blue: #1257c7;
+  --pulse-blue-dark: #0d44a0;
+  --pulse-blue-soft: #e8f0fd;
+
+  --pulse-green: #157a3b;
+  --pulse-green-soft: #e6f4ea;
+
+  --pulse-red: #c4231c;
+  --pulse-red-soft: #fdecea;
+
+  --pulse-radius: 16px;
+  --pulse-nav-h: 76px;
+
+  --bs-body-font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --bs-body-color: var(--pulse-text);
+  --bs-body-bg: var(--pulse-bg);
+  --bs-link-color-rgb: 18, 87, 199;
+}
+
+html { font-size: 18px; }
+body {
+  background: var(--pulse-bg);
+  color: var(--pulse-text);
+  line-height: 1.45;
+  min-width: 360px;
+}
+
+svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+:focus-visible { outline: 3px solid var(--pulse-blue); outline-offset: 3px; }
+
+.skip-link {
+  position: absolute; left: 16px; top: 8px; z-index: 100;
+  background: var(--pulse-surface); padding: 8px 12px; border-radius: 8px;
+}
+
+/* ---------- Каркас пациента ---------- */
+
+.patient-header {
+  background: var(--pulse-surface);
+  border-bottom: 1px solid var(--pulse-border);
+}
+.patient-header__inner,
+.patient-main {
+  max-width: 560px;
+  margin: 0 auto;
+  padding-left: 16px;
+  padding-right: 16px;
+}
+.patient-header__inner {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  min-height: 60px;
+}
+.brand {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-weight: 700; font-size: 1.15rem; color: var(--pulse-blue);
+}
+.brand svg { width: 26px; height: 26px; stroke-width: 2.4; }
+.patient-header__date { color: var(--pulse-muted); font-size: 1rem; text-align: right; }
+
+.patient-main {
+  padding-top: 20px;
+  padding-bottom: calc(var(--pulse-nav-h) + 28px + env(safe-area-inset-bottom));
+}
+
+.greeting { font-size: 1.5rem; font-weight: 700; line-height: 1.25; margin: 0 0 16px; }
+
+/* ---------- Ближайший приём ---------- */
+
+.next-card {
+  background: var(--pulse-surface);
+  border: 2px solid var(--pulse-blue);
+  border-radius: var(--pulse-radius);
+  padding: 20px;
+  margin-bottom: 24px;
+  animation: pulse-appear .25s ease-out;
+}
+.next-card p { margin: 0; }
+.next-card__label { color: var(--pulse-blue); font-weight: 700; font-size: 1rem; text-transform: uppercase; letter-spacing: .04em; }
+.next-card__time { font-size: 2.6rem; font-weight: 700; line-height: 1.1; margin-top: 4px !important; font-variant-numeric: tabular-nums; }
+.next-card__drug { font-size: 1.45rem; font-weight: 700; margin-top: 6px !important; }
+.next-card__dose { color: var(--pulse-muted); margin-top: 2px !important; }
+.next-card__done { font-size: 1.25rem; margin-top: 6px !important; }
+
+.btn-take {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  width: 100%;
+  min-height: 64px;
+  margin-top: 20px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--pulse-blue);
+  color: #fff;
+  font-size: 1.35rem;
+  font-weight: 700;
+  transition: background-color .2s ease, transform .1s ease;
+}
+.btn-take svg { width: 30px; height: 30px; stroke-width: 3; }
+.btn-take:hover { background: var(--pulse-blue-dark); }
+.btn-take:active { transform: scale(.98); }
+/* Пока запрос идёт, кнопка становится зелёной: нажатие засчитано. */
+.btn-take.htmx-request { background: var(--pulse-green); pointer-events: none; }
+
+.toast-taken {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--pulse-green-soft);
+  color: var(--pulse-green);
+  border-radius: 12px;
+  padding: 12px 16px;
+  font-weight: 600;
+  margin: 0 0 16px;
+  animation: pulse-appear .3s ease-out;
+}
+.toast-taken svg { width: 24px; height: 24px; stroke-width: 3; flex: none; }
+
+/* ---------- Список на сегодня ---------- */
+
+.today__head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; margin-bottom: 12px; }
+.today__head h2 { font-size: 1.25rem; font-weight: 700; margin: 0; }
+.today__count { color: var(--pulse-muted); font-size: 1rem; }
+
+.intake-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+.intake {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 14px;
+  background: var(--pulse-surface);
+  border: 1px solid var(--pulse-border);
+  border-radius: 14px;
+  padding: 14px 16px;
+  min-height: 72px;
+}
+.intake__time { font-size: 1.2rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.intake__body { display: flex; flex-direction: column; min-width: 0; }
+.intake__drug { font-weight: 600; }
+.intake__dose { color: var(--pulse-muted); font-size: 1rem; }
+.intake__status {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 1rem; font-weight: 600; color: var(--pulse-muted);
+  white-space: nowrap;
+}
+.intake__status svg { width: 20px; height: 20px; stroke-width: 3; }
+
+.intake--taken { background: var(--pulse-green-soft); border-color: transparent; }
+.intake--taken .intake__status { color: var(--pulse-green); }
+.intake--next { border: 2px solid var(--pulse-blue); }
+.intake--next .intake__status { color: var(--pulse-blue); }
+
+/* ---------- Нижняя навигация пациента ---------- */
+
+.patient-nav {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
+  background: var(--pulse-surface);
+  border-top: 1px solid var(--pulse-border);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.patient-nav__list {
+  list-style: none; margin: 0 auto; padding: 0 8px;
+  max-width: 560px;
+  display: grid; grid-template-columns: repeat(4, 1fr);
+}
+.patient-nav__link {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  min-height: var(--pulse-nav-h);
+  color: var(--pulse-muted);
+  text-decoration: none;
+  font-size: .9rem; font-weight: 600;
+  border-radius: 12px;
+}
+.patient-nav__icon { width: 28px; height: 28px; }
+.patient-nav__link:hover { color: var(--pulse-blue); }
+.patient-nav__link.is-active { color: var(--pulse-blue); }
+.patient-nav__link.is-active .patient-nav__icon { stroke-width: 2.6; }
+.patient-nav__link--help { color: var(--pulse-red); }
+.patient-nav__link--help:hover { color: var(--pulse-red); background: var(--pulse-red-soft); }
+
+/* ---------- Анимации ---------- */
+
+@keyframes pulse-appear {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+
+/* ---------- Компьютер ---------- */
+
+@media (min-width: 768px) {
+  .patient-main { padding-top: 32px; }
+  .greeting { font-size: 1.75rem; }
+}
