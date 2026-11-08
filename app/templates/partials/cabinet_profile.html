@@ -1,0 +1,31 @@
+<section class="panel" aria-labelledby="profile-title">
+  <h2 class="panel__title" id="profile-title">Мои данные</h2>
+
+  {% if saved %}
+  <p class="toast-ok" role="status">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>
+    Сохранено
+  </p>
+  {% endif %}
+
+  <form class="form-big" hx-post="/cabinet/profile" hx-target="#profile" novalidate>
+    {% for name, label, type, auto in [
+      ("last_name", "Фамилия", "text", "family-name"),
+      ("first_name", "Имя", "text", "given-name"),
+      ("patronymic", "Отчество", "text", "additional-name"),
+      ("phone", "Телефон", "tel", "tel"),
+      ("email", "Электронная почта", "email", "email"),
+    ] %}
+    <div class="field">
+      <label for="{{ name }}">{{ label }}</label>
+      <input id="{{ name }}" name="{{ name }}" type="{{ type }}" autocomplete="{{ auto }}"
+             value="{{ form.get(name, '') }}"
+             {% if errors.get(name) %}aria-invalid="true" aria-describedby="{{ name }}-error"{% endif %}>
+      {% if name == "email" %}<p class="panel__hint mb-0">На почту придёт копия каждого напоминания.</p>{% endif %}
+      {% include "partials/field_error.html" %}
+    </div>
+    {% endfor %}
+
+    <button type="submit" class="btn-second">Сохранить</button>
+  </form>
+</section>

@@ -4,24 +4,17 @@
 {% block body_class %}patient{% endblock %}
 {% block main_class %}patient-main{% endblock %}
 
-{% block header %}
-<header class="patient-header">
-  <div class="patient-header__inner">
-    <span class="brand" aria-label="Пульс">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12h4l2.5-6 4 12 2.5-6h6"/></svg>
-      Пульс
-    </span>
-    <span class="patient-header__date">{{ today }}</span>
-  </div>
-</header>
-{% endblock %}
+{% block header %}{% include "partials/patient_header.html" %}{% endblock %}
 
 {% block content %}
-<h1 class="greeting">Здравствуйте, {{ patient.first_name }} {{ patient.patronymic }}</h1>
+<div class="page-head">
+  <p class="page-head__date">{{ today }}</p>
+  <h1 class="page-head__title">Здравствуйте, {{ patient.first_name }} {{ patient.patronymic }}</h1>
+</div>
 
 <div id="today">
   {% include "partials/today.html" %}
 </div>
 {% endblock %}
 
-{% block bottom_nav %}{% include "partials/patient_nav.html" %}{% endblock %}
+{% block bottom_nav %}{% with variant="bottom" %}{% include "partials/patient_nav.html" %}{% endwith %}{% endblock %}

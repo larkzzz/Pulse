@@ -1,0 +1,99 @@
+{# Мои лекарства: список расписания и форма добавления. Перерисовывается целиком через HTMX. #}
+<section class="panel" aria-labelledby="meds-title">
+  <div class="panel__head">
+    <h2 class="panel__title" id="meds-title">Мои лекарства</h2>
+    <span class="panel__count">{{ schedule | length }}</span>
+  </div>
+
+  {% if added %}
+  <p class="toast-ok" role="status">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>
+    {{ added.drug }} добавлен. Напомним в {{ added.times | join(", ") }}
+  </p>
+  {% endif %}
+
+  {% if schedule %}
+  <ul class="med-list">
+    {% for med in schedule %}
+    <li class="med">
+      <div class="med__info">
+        <p class="med__drug">{{ med.drug }}</p>
+        <p class="med__dose">{{ med.dose }}, {{ med.meal }}{% if med.until %} · до {{ med.until }}{% endif %}</p>
+        <p class="med__times">
+          {% for t in med.times %}<span class="time-chip">{{ t }}</span>{% endfor %}
+        </p>
+      </div>
+      <button type="button" class="btn-ghost"
+              hx-delete="/cabinet/medications/{{ med.id }}"
+              hx-target="#meds"
+              hx-confirm="Удалить {{ med.drug }} из списка? Напоминания о нём больше не придут.">
+        Удалить
+      </button>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="panel__empty">Лекарств пока нет. Добавьте первое ниже.</p>
+  {% endif %}
+</section>
+
+<section class="panel" aria-labelledby="add-title">
+  <h2 class="panel__title" id="add-title">Добавить лекарство</h2>
+  <p class="panel__hint">Перепишите из листка назначений, который дал врач.</p>
+
+  <form class="form-big" hx-post="/cabinet/medications" hx-target="#meds" novalidate>
+    <div class="field">
+      <label for="drug">Название лекарства</label>
+      <input id="drug" name="drug" list="drug-list" autocomplete="off"
+             value="{{ form.get('drug', '') }}" placeholder="Например, Эналаприл"
+             {% if errors.get('drug') %}aria-invalid="true" aria-describedby="drug-error"{% endif %}>
+      <datalist id="drug-list">{% for d in drugs %}<option value="{{ d }}">{% endfor %}</datalist>
+      {% with name="drug" %}{% include "partials/field_error.html" %}{% endwith %}
+    </div>
+
+    <div class="field">
+      <label for="dose">Доза</label>
+      <input id="dose" name="dose" value="{{ form.get('dose', '') }}" placeholder="Например, 10 мг, 1 таблетка"
+             {% if errors.get('dose') %}aria-invalid="true" aria-describedby="dose-error"{% endif %}>
+      {% with name="dose" %}{% include "partials/field_error.html" %}{% endwith %}
+    </div>
+
+    <fieldset class="field">
+      <legend>Когда принимать</legend>
+      <div class="choice-row">
+        {% for opt in meal_options %}
+        <label class="choice">
+          <input type="radio" name="meal" value="{{ opt }}"
+                 {% if form.get('meal', 'не важно') == opt %}checked{% endif %}>
+          <span>{{ opt | capitalize }}</span>
+        </label>
+        {% endfor %}
+      </div>
+    </fieldset>
+
+    <fieldset class="field">
+      <legend>Время приёма</legend>
+      <p class="panel__hint">Если пьёте несколько раз в день, укажите каждое время.</p>
+      <div class="time-row">
+        {% for n in [1, 2, 3] %}
+        <label class="time-field">
+          <span>{{ n }}-й приём{% if n > 1 %} <small>(если нужно)</small>{% endif %}</span>
+          <input type="time" name="time{{ n }}" value="{{ form.get('time' ~ n, '') }}"
+                 {% if n == 1 and errors.get('time1') %}aria-invalid="true" aria-describedby="time1-error"{% endif %}>
+        </label>
+        {% endfor %}
+      </div>
+      {% with name="time1" %}{% include "partials/field_error.html" %}{% endwith %}
+    </fieldset>
+
+    <div class="field">
+      <label for="until">Принимать до <small>(если врач сказал)</small></label>
+      <input id="until" name="until" value="{{ form.get('until', '') }}" placeholder="Например, 31 декабря">
+    </div>
+
+    <button type="submit" class="btn-main">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+      <span>Добавить лекарство</span>
+    </button>
+  </form>
+</section>

@@ -1,8 +1,9 @@
 /* Пульс: общие стили поверх Bootstrap.
-   Пациентский интерфейс: шрифт от 18px, кнопки от 48px, высокий контраст. */
+   Пациентский интерфейс: шрифт от 18px, кнопки от 48px, высокий контраст.
+   Телефон — одна колонка и нижнее меню; компьютер (от 992px) — меню в шапке и две колонки. */
 
 :root {
-  --pulse-bg: #f5f7fa;
+  --pulse-bg: #f3f6fa;
   --pulse-surface: #ffffff;
   --pulse-text: #14202e;
   --pulse-muted: #4a5868;
@@ -19,7 +20,9 @@
   --pulse-red-soft: #fdecea;
 
   --pulse-radius: 16px;
+  --pulse-shadow: 0 1px 2px rgba(20, 32, 46, .06), 0 4px 16px rgba(20, 32, 46, .05);
   --pulse-nav-h: 76px;
+  --pulse-page: 560px;
 
   --bs-body-font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --bs-body-color: var(--pulse-text);
@@ -44,74 +47,57 @@ svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; 
   background: var(--pulse-surface); padding: 8px 12px; border-radius: 8px;
 }
 
-/* ---------- Каркас пациента ---------- */
+/* ---------- Шапка ---------- */
 
 .patient-header {
+  position: sticky; top: 0; z-index: 40;
   background: var(--pulse-surface);
   border-bottom: 1px solid var(--pulse-border);
 }
 .patient-header__inner,
 .patient-main {
-  max-width: 560px;
+  max-width: var(--pulse-page);
   margin: 0 auto;
   padding-left: 16px;
   padding-right: 16px;
 }
 .patient-header__inner {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  min-height: 60px;
+  min-height: 64px;
 }
 .brand {
   display: inline-flex; align-items: center; gap: 8px;
-  font-weight: 700; font-size: 1.15rem; color: var(--pulse-blue);
+  font-weight: 700; font-size: 1.2rem; color: var(--pulse-blue);
+  text-decoration: none;
 }
-.brand svg { width: 26px; height: 26px; stroke-width: 2.4; }
-.patient-header__date { color: var(--pulse-muted); font-size: 1rem; text-align: right; }
+.brand svg { width: 28px; height: 28px; stroke-width: 2.4; }
+
+.cabinet-link {
+  display: inline-flex; align-items: center; gap: 8px;
+  min-height: 48px; padding: 0 14px;
+  border: 2px solid var(--pulse-border);
+  border-radius: 12px;
+  color: var(--pulse-text);
+  font-weight: 600; font-size: 1rem;
+  text-decoration: none;
+  transition: border-color .2s ease, background-color .2s ease;
+}
+.cabinet-link svg { width: 24px; height: 24px; color: var(--pulse-blue); }
+.cabinet-link:hover { border-color: var(--pulse-blue); }
+.cabinet-link.is-active { border-color: var(--pulse-blue); background: var(--pulse-blue-soft); color: var(--pulse-blue); }
+
+/* ---------- Страница ---------- */
 
 .patient-main {
   padding-top: 20px;
   padding-bottom: calc(var(--pulse-nav-h) + 28px + env(safe-area-inset-bottom));
 }
 
-.greeting { font-size: 1.5rem; font-weight: 700; line-height: 1.25; margin: 0 0 16px; }
+.page-head { margin-bottom: 16px; }
+.page-head__date { color: var(--pulse-muted); margin: 0 0 2px; }
+.page-head__title { font-size: 1.5rem; font-weight: 700; line-height: 1.25; margin: 0; }
 
-/* ---------- Ближайший приём ---------- */
-
-.next-card {
-  background: var(--pulse-surface);
-  border: 2px solid var(--pulse-blue);
-  border-radius: var(--pulse-radius);
-  padding: 20px;
-  margin-bottom: 24px;
-  animation: pulse-appear .25s ease-out;
-}
-.next-card p { margin: 0; }
-.next-card__label { color: var(--pulse-blue); font-weight: 700; font-size: 1rem; text-transform: uppercase; letter-spacing: .04em; }
-.next-card__time { font-size: 2.6rem; font-weight: 700; line-height: 1.1; margin-top: 4px !important; font-variant-numeric: tabular-nums; }
-.next-card__drug { font-size: 1.45rem; font-weight: 700; margin-top: 6px !important; }
-.next-card__dose { color: var(--pulse-muted); margin-top: 2px !important; }
-.next-card__done { font-size: 1.25rem; margin-top: 6px !important; }
-
-.btn-take {
-  display: flex; align-items: center; justify-content: center; gap: 10px;
-  width: 100%;
-  min-height: 64px;
-  margin-top: 20px;
-  border: 0;
-  border-radius: 14px;
-  background: var(--pulse-blue);
-  color: #fff;
-  font-size: 1.35rem;
-  font-weight: 700;
-  transition: background-color .2s ease, transform .1s ease;
-}
-.btn-take svg { width: 30px; height: 30px; stroke-width: 3; }
-.btn-take:hover { background: var(--pulse-blue-dark); }
-.btn-take:active { transform: scale(.98); }
-/* Пока запрос идёт, кнопка становится зелёной: нажатие засчитано. */
-.btn-take.htmx-request { background: var(--pulse-green); pointer-events: none; }
-
-.toast-taken {
+.toast-ok {
   display: flex; align-items: center; gap: 10px;
   background: var(--pulse-green-soft);
   color: var(--pulse-green);
@@ -121,13 +107,78 @@ svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; 
   margin: 0 0 16px;
   animation: pulse-appear .3s ease-out;
 }
-.toast-taken svg { width: 24px; height: 24px; stroke-width: 3; flex: none; }
+.toast-ok svg { width: 24px; height: 24px; stroke-width: 3; flex: none; }
 
-/* ---------- Список на сегодня ---------- */
+/* ---------- Главная: ближайший приём ---------- */
 
-.today__head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; margin-bottom: 12px; }
+.home-grid { display: grid; gap: 24px; }
+
+.next-card {
+  background: var(--pulse-surface);
+  border: 2px solid var(--pulse-blue);
+  border-radius: var(--pulse-radius);
+  box-shadow: var(--pulse-shadow);
+  padding: 20px;
+  animation: pulse-appear .25s ease-out;
+}
+.next-card p { margin: 0; }
+.next-card__label { color: var(--pulse-blue); font-weight: 700; font-size: 1rem; text-transform: uppercase; letter-spacing: .04em; }
+.next-card__time { font-size: 2.6rem; font-weight: 700; line-height: 1.1; margin-top: 4px !important; font-variant-numeric: tabular-nums; }
+.next-card__drug { font-size: 1.45rem; font-weight: 700; margin-top: 6px !important; }
+.next-card__dose { color: var(--pulse-muted); margin-top: 2px !important; }
+.next-card__done { font-size: 1.2rem; margin-top: 6px !important; }
+
+.btn-take,
+.btn-main {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  width: 100%;
+  min-height: 64px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--pulse-blue);
+  color: #fff;
+  font-size: 1.3rem;
+  font-weight: 700;
+  transition: background-color .2s ease, transform .1s ease;
+}
+.btn-take { margin-top: 20px; font-size: 1.35rem; }
+.btn-take svg, .btn-main svg { width: 30px; height: 30px; stroke-width: 3; }
+.btn-take:hover, .btn-main:hover { background: var(--pulse-blue-dark); }
+.btn-take:active, .btn-main:active { transform: scale(.98); }
+/* Пока запрос идёт, кнопка «Принял» становится зелёной: нажатие засчитано. */
+.btn-take.htmx-request { background: var(--pulse-green); pointer-events: none; }
+
+.setup-card {
+  display: flex; align-items: center; gap: 14px;
+  margin-top: 16px;
+  min-height: 72px;
+  padding: 14px 16px;
+  background: var(--pulse-surface);
+  border: 1px solid var(--pulse-border);
+  border-radius: var(--pulse-radius);
+  color: var(--pulse-text);
+  text-decoration: none;
+  transition: border-color .2s ease;
+}
+.setup-card:hover { border-color: var(--pulse-blue); color: var(--pulse-text); }
+.setup-card > svg:first-child { width: 32px; height: 32px; color: var(--pulse-blue); flex: none; }
+.setup-card__text { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.setup-card__text span { color: var(--pulse-muted); font-size: 1rem; }
+.setup-card__arrow { width: 24px; height: 24px; color: var(--pulse-muted); flex: none; }
+
+/* ---------- Главная: список на сегодня ---------- */
+
+.today__head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; margin-bottom: 10px; }
 .today__head h2 { font-size: 1.25rem; font-weight: 700; margin: 0; }
 .today__count { color: var(--pulse-muted); font-size: 1rem; }
+
+.progress-line {
+  height: 8px; border-radius: 4px;
+  background: var(--pulse-border);
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+.progress-line span { display: block; height: 100%; background: var(--pulse-green); border-radius: 4px; transition: width .4s ease; }
 
 .intake-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
 .intake {
@@ -157,33 +208,187 @@ svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; 
 .intake--next { border: 2px solid var(--pulse-blue); }
 .intake--next .intake__status { color: var(--pulse-blue); }
 
-/* ---------- Нижняя навигация пациента ---------- */
+/* ---------- Кабинет ---------- */
 
-.patient-nav {
-  position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
+.cabinet-grid { display: grid; gap: 20px; }
+.cabinet-grid__main, .cabinet-grid__side { display: grid; gap: 20px; align-content: start; min-width: 0; }
+
+.panel {
   background: var(--pulse-surface);
+  border: 1px solid var(--pulse-border);
+  border-radius: var(--pulse-radius);
+  box-shadow: var(--pulse-shadow);
+  padding: 20px;
+  animation: pulse-appear .25s ease-out;
+}
+.panel__head { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.panel__title { font-size: 1.25rem; font-weight: 700; margin: 0 0 14px; }
+.panel__head .panel__title { margin: 0; }
+.panel__count {
+  min-width: 32px; height: 32px; padding: 0 8px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 16px; background: var(--pulse-blue-soft); color: var(--pulse-blue);
+  font-weight: 700; font-size: 1rem;
+}
+.panel__hint { color: var(--pulse-muted); font-size: 1rem; margin: -6px 0 14px; }
+.panel__empty { color: var(--pulse-muted); margin: 0; }
+
+.med-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.med {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--pulse-border);
+  border-radius: 14px;
+  animation: pulse-appear .25s ease-out;
+}
+.med p { margin: 0; }
+.med__info { min-width: 0; flex: 1 1 220px; }
+.med__drug { font-weight: 700; font-size: 1.1rem; }
+.med__dose { color: var(--pulse-muted); font-size: 1rem; }
+.med__times { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px !important; }
+.time-chip {
+  display: inline-block; padding: 2px 10px;
+  border-radius: 8px; background: var(--pulse-blue-soft); color: var(--pulse-blue);
+  font-weight: 700; font-size: 1rem; font-variant-numeric: tabular-nums;
+}
+
+.btn-ghost {
+  flex: none;
+  min-height: 48px; padding: 0 14px;
+  background: transparent;
+  border: 2px solid var(--pulse-border);
+  border-radius: 12px;
+  color: var(--pulse-muted);
+  font-weight: 600; font-size: 1rem;
+}
+.btn-ghost:hover { border-color: var(--pulse-muted); color: var(--pulse-text); }
+
+.btn-second {
+  width: 100%;
+  min-height: 56px;
+  background: var(--pulse-surface);
+  border: 2px solid var(--pulse-blue);
+  border-radius: 14px;
+  color: var(--pulse-blue);
+  font-weight: 700; font-size: 1.1rem;
+  transition: background-color .2s ease;
+}
+.btn-second:hover { background: var(--pulse-blue-soft); }
+
+/* Формы */
+
+.form-big { display: grid; gap: 18px; }
+.field { border: 0; padding: 0; margin: 0; min-width: 0; }
+.field > label, .field > legend {
+  display: block; float: none; width: auto;
+  font-weight: 600; font-size: 1rem; margin-bottom: 6px;
+}
+.field small, .time-field small { font-weight: 400; color: var(--pulse-muted); }
+.field input:not([type="radio"]):not([type="checkbox"]),
+.time-field input {
+  width: 100%;
+  min-height: 56px;
+  padding: 10px 14px;
+  border: 2px solid var(--pulse-border);
+  border-radius: 12px;
+  background: var(--pulse-surface);
+  color: var(--pulse-text);
+  font-size: 1.1rem;
+  transition: border-color .2s ease;
+}
+.field input:focus, .time-field input:focus { outline: none; border-color: var(--pulse-blue); box-shadow: 0 0 0 3px var(--pulse-blue-soft); }
+.field input[aria-invalid="true"], .time-field input[aria-invalid="true"] { border-color: var(--pulse-red); }
+.field input::placeholder { color: #7d8896; }
+.field > .panel__hint { margin: 6px 0 0; }
+.field-error { color: var(--pulse-red); font-size: 1rem; font-weight: 600; margin: 6px 0 0; }
+
+.choice-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.choice { position: relative; }
+.choice input { position: absolute; opacity: 0; inset: 0; }
+.choice span {
+  display: flex; align-items: center; justify-content: center; text-align: center;
+  min-height: 52px; padding: 6px 10px;
+  border: 2px solid var(--pulse-border);
+  border-radius: 12px;
+  font-size: 1rem; font-weight: 600;
+  cursor: pointer;
+  transition: border-color .2s ease, background-color .2s ease;
+}
+.choice input:checked + span { border-color: var(--pulse-blue); background: var(--pulse-blue-soft); color: var(--pulse-blue); }
+.choice input:focus-visible + span { outline: 3px solid var(--pulse-blue); outline-offset: 2px; }
+
+.time-row { display: grid; grid-template-columns: 1fr; gap: 10px; }
+.time-field { display: grid; gap: 4px; font-size: 1rem; font-weight: 600; }
+
+/* Переключатели уведомлений */
+
+.switch {
+  position: relative;
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 14px 0;
   border-top: 1px solid var(--pulse-border);
-  padding-bottom: env(safe-area-inset-bottom);
+  cursor: pointer;
 }
-.patient-nav__list {
-  list-style: none; margin: 0 auto; padding: 0 8px;
-  max-width: 560px;
-  display: grid; grid-template-columns: repeat(4, 1fr);
+.switch:first-of-type { border-top: 0; padding-top: 0; }
+.switch__text { display: flex; flex-direction: column; }
+.switch__text span { color: var(--pulse-muted); font-size: 1rem; }
+.switch input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.switch__track {
+  position: relative; flex: none;
+  width: 64px; height: 36px; border-radius: 18px;
+  background: #b9c3cf;
+  transition: background-color .2s ease;
 }
+.switch__track::after {
+  content: ""; position: absolute; top: 4px; left: 4px;
+  width: 28px; height: 28px; border-radius: 50%;
+  background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.25);
+  transition: transform .2s ease;
+}
+.switch input:checked + .switch__track { background: var(--pulse-blue); }
+.switch input:checked + .switch__track::after { transform: translateX(28px); }
+.switch input:focus-visible + .switch__track { outline: 3px solid var(--pulse-blue); outline-offset: 3px; }
+
+.doctor-line { margin: 0 0 8px; }
+
+/* ---------- Навигация пациента ---------- */
+
+.patient-nav__list { list-style: none; margin: 0; padding: 0; }
 .patient-nav__link {
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
-  min-height: var(--pulse-nav-h);
+  display: flex; align-items: center; justify-content: center; gap: 4px;
   color: var(--pulse-muted);
   text-decoration: none;
-  font-size: .9rem; font-weight: 600;
+  font-weight: 600;
   border-radius: 12px;
+  transition: color .2s ease, background-color .2s ease;
 }
 .patient-nav__icon { width: 28px; height: 28px; }
 .patient-nav__link:hover { color: var(--pulse-blue); }
 .patient-nav__link.is-active { color: var(--pulse-blue); }
 .patient-nav__link.is-active .patient-nav__icon { stroke-width: 2.6; }
-.patient-nav__link--help { color: var(--pulse-red); }
-.patient-nav__link--help:hover { color: var(--pulse-red); background: var(--pulse-red-soft); }
+.patient-nav__link--help, .patient-nav__link--help:hover { color: var(--pulse-red); }
+
+/* Нижняя панель (телефон) */
+.patient-nav--bottom {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
+  background: var(--pulse-surface);
+  border-top: 1px solid var(--pulse-border);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.patient-nav--bottom .patient-nav__list {
+  margin: 0 auto; padding: 0 8px;
+  max-width: var(--pulse-page);
+  display: grid; grid-template-columns: repeat(4, 1fr);
+}
+.patient-nav--bottom .patient-nav__link {
+  flex-direction: column;
+  min-height: var(--pulse-nav-h);
+  font-size: .9rem;
+}
+.patient-nav--bottom .patient-nav__link--help:hover { background: var(--pulse-red-soft); }
+
+/* Строка в шапке (компьютер) — на телефоне скрыта */
+.patient-nav--top { display: none; }
 
 /* ---------- Анимации ---------- */
 
@@ -196,9 +401,54 @@ svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; 
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
 
+/* ---------- Узкий телефон ---------- */
+
+@media (max-width: 420px) {
+  .btn-main { font-size: 1.15rem; }
+  .btn-main svg { width: 26px; height: 26px; }
+  .panel { padding: 16px; }
+}
+
+/* ---------- Планшет ---------- */
+
+@media (min-width: 600px) {
+  .time-row { grid-template-columns: repeat(3, 1fr); }
+  .choice-row { grid-template-columns: repeat(4, 1fr); }
+}
+
 /* ---------- Компьютер ---------- */
 
-@media (min-width: 768px) {
-  .patient-main { padding-top: 32px; }
-  .greeting { font-size: 1.75rem; }
+@media (min-width: 992px) {
+  :root { --pulse-page: 1160px; }
+
+  .patient-main { padding-top: 32px; padding-bottom: 48px; }
+  .page-head { margin-bottom: 24px; }
+  .page-head__title { font-size: 2rem; }
+
+  .patient-nav--bottom { display: none; }
+  .patient-nav--top { display: block; }
+  .patient-nav--top .patient-nav__list { display: flex; gap: 4px; }
+  .patient-nav--top .patient-nav__link { min-height: 48px; padding: 0 16px; font-size: 1rem; gap: 8px; }
+  .patient-nav--top .patient-nav__icon { width: 24px; height: 24px; }
+  .patient-nav--top .patient-nav__link:hover { background: var(--pulse-blue-soft); }
+  .patient-nav--top .patient-nav__link.is-active { background: var(--pulse-blue-soft); }
+  .patient-nav--top .patient-nav__link--help:hover { background: var(--pulse-red-soft); }
+
+  /* Главная: слева ближайший приём, справа список на сегодня */
+  .home-grid { grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 32px; align-items: start; }
+  .home-grid__main { position: sticky; top: 96px; }
+  .next-card { padding: 28px; }
+  .next-card__time { font-size: 3.4rem; }
+  .next-card__drug { font-size: 1.7rem; }
+  .home-grid__side {
+    background: var(--pulse-surface);
+    border: 1px solid var(--pulse-border);
+    border-radius: var(--pulse-radius);
+    box-shadow: var(--pulse-shadow);
+    padding: 24px;
+  }
+
+  /* Кабинет: слева лекарства, справа данные и уведомления */
+  .cabinet-grid { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 28px; align-items: start; }
+  .panel { padding: 24px; }
 }

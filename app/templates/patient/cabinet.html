@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}Мой кабинет · Пульс{% endblock %}
+{% block body_class %}patient{% endblock %}
+{% block main_class %}patient-main{% endblock %}
+
+{% block header %}{% include "partials/patient_header.html" %}{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <p class="page-head__date">{{ patient.last_name }} {{ patient.first_name }} {{ patient.patronymic }}</p>
+  <h1 class="page-head__title">Мой кабинет</h1>
+</div>
+
+<div class="cabinet-grid">
+  <div class="cabinet-grid__main" id="meds">
+    {% with form={}, errors={} %}{% include "partials/cabinet_meds.html" %}{% endwith %}
+  </div>
+
+  <div class="cabinet-grid__side">
+    <div id="profile">
+      {% with form=patient, errors={} %}{% include "partials/cabinet_profile.html" %}{% endwith %}
+    </div>
+    <div id="notifications">
+      {% include "partials/cabinet_notifications.html" %}
+    </div>
+
+    <section class="panel" aria-labelledby="doctor-title">
+      <h2 class="panel__title" id="doctor-title">Мой врач</h2>
+      <p class="doctor-line">
+        <strong>{{ patient.doctor }}</strong><br>
+        {{ patient.doctor_role }}, {{ patient.clinic }}
+      </p>
+      <p class="panel__hint mb-0">Врача закрепляет администратор больницы.</p>
+    </section>
+  </div>
+</div>
+{% endblock %}
+
+{% block bottom_nav %}{% with variant="bottom" %}{% include "partials/patient_nav.html" %}{% endwith %}{% endblock %}

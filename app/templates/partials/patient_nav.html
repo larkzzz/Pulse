@@ -1,11 +1,12 @@
-{# Нижняя навигация пациента: четыре пункта, у каждого значок и подпись. #}
+{# Навигация пациента: четыре пункта, у каждого значок и подпись.
+   variant="bottom" — нижняя панель на телефоне, variant="top" — строка в шапке на компьютере. #}
 {% set tabs = [
   ("home", "/", "Главная", '<path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/><path d="M10 19.5v-5h4v5"/>'),
   ("assistant", "/assistant", "Помощник", '<path d="M4 5.5h16v10H9l-5 4z"/><path d="M8.5 10.5h.01M12 10.5h.01M15.5 10.5h.01"/>'),
   ("doctor", "/doctor-chat", "Врач", '<circle cx="12" cy="7.5" r="3.5"/><path d="M5 20c.8-3.8 3.6-6 7-6s6.2 2.2 7 6"/><path d="M12 14v3.5M10.3 15.8h3.4"/>'),
   ("help", "/help", "Помощь", '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5v5"/><path d="M12 16h.01"/>'),
 ] %}
-<nav class="patient-nav" aria-label="Основное меню">
+<nav class="patient-nav patient-nav--{{ variant }}" aria-label="Основное меню">
   <ul class="patient-nav__list">
     {% for key, href, label, icon in tabs %}
     <li>

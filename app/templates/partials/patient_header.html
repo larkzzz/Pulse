@@ -1,0 +1,16 @@
+<header class="patient-header">
+  <div class="patient-header__inner">
+    <a class="brand" href="/" aria-label="Пульс, на главную">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12h4l2.5-6 4 12 2.5-6h6"/></svg>
+      Пульс
+    </a>
+
+    {% with variant="top" %}{% include "partials/patient_nav.html" %}{% endwith %}
+
+    <a href="/cabinet" class="cabinet-link{% if active_tab == 'cabinet' %} is-active{% endif %}"
+       {% if active_tab == 'cabinet' %}aria-current="page"{% endif %}>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1"/><path d="M8.5 10h7M8.5 13.5h7M8.5 17h4"/></svg>
+      <span>Мой кабинет</span>
+    </a>
+  </div>
+</header>

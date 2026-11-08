@@ -1,0 +1,27 @@
+<section class="panel" aria-labelledby="notify-title">
+  <h2 class="panel__title" id="notify-title">Как напоминать</h2>
+
+  {% if saved %}
+  <p class="toast-ok" role="status">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>
+    Сохранено
+  </p>
+  {% endif %}
+
+  <form hx-post="/cabinet/notifications" hx-target="#notifications" hx-trigger="change">
+    {% for name, title, hint in [
+      ("push", "Уведомление на телефоне", "Сообщение на экране в нужное время"),
+      ("email", "Письмо на почту", "Копия напоминания, если уведомление не пришло"),
+      ("voice", "Голосом", "Напоминание прочитает приятный голос"),
+    ] %}
+    <label class="switch">
+      <span class="switch__text">
+        <strong>{{ title }}</strong>
+        <span>{{ hint }}</span>
+      </span>
+      <input type="checkbox" role="switch" name="{{ name }}" value="1" {% if notifications[name] %}checked{% endif %}>
+      <span class="switch__track" aria-hidden="true"></span>
+    </label>
+    {% endfor %}
+  </form>
+</section>
