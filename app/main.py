@@ -64,7 +64,7 @@ def patient_home(request: Request):
 
 @app.post("/intakes/{schedule_id}/{key}/take", response_class=HTMLResponse)
 def take_intake(request: Request, schedule_id: int, key: str):
-    """Отметка «Принял». Отдаём обновлённый блок «сегодня»."""
+    """Отметка «Лекарство принято». Отдаём обновлённый блок «сегодня»."""
     time = f"{key[:2]}:{key[2:]}"
     entry = next((e for e in mock_data.SCHEDULE if e["id"] == schedule_id), None)
     just_taken = None

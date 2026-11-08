@@ -1,5 +1,5 @@
-{# Блок «сегодня»: ближайший приём с кнопкой «Принял» и список приёмов.
-   Перерисовывается через HTMX после нажатия «Принял».
+{# Блок «сегодня»: ближайший приём с кнопкой «Лекарство принято» и список приёмов.
+   Перерисовывается через HTMX после нажатия «Лекарство принято».
    На компьютере — две колонки: слева ближайший приём, справа список. #}
 <div class="home-grid">
   <div class="home-grid__main">
@@ -22,7 +22,7 @@
               hx-target="#today"
               hx-swap="innerHTML">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>
-        <span>Принял</span>
+        <span>Лекарство принято</span>
       </button>
       {% elif total_count %}
       <p class="next-card__label" id="next-title">На сегодня всё</p>
@@ -65,7 +65,7 @@
         <span class="intake__status">
           {% if item.status == "taken" %}
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>
-            Принял
+            Принято
           {% elif item.status == "next" %}
             Скоро
           {% else %}

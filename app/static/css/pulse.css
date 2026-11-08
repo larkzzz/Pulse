@@ -145,7 +145,7 @@ svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; 
 .btn-take svg, .btn-main svg { width: 30px; height: 30px; stroke-width: 3; }
 .btn-take:hover, .btn-main:hover { background: var(--pulse-blue-dark); }
 .btn-take:active, .btn-main:active { transform: scale(.98); }
-/* Пока запрос идёт, кнопка «Принял» становится зелёной: нажатие засчитано. */
+/* Пока запрос идёт, кнопка «Лекарство принято» становится зелёной: нажатие засчитано. */
 .btn-take.htmx-request { background: var(--pulse-green); pointer-events: none; }
 
 .setup-card {
@@ -404,6 +404,9 @@ svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; 
 /* ---------- Узкий телефон ---------- */
 
 @media (max-width: 420px) {
+  .next-card { padding: 16px; }
+  .btn-take { font-size: 1.2rem; gap: 8px; padding: 0 10px; white-space: nowrap; }
+  .btn-take svg { width: 26px; height: 26px; }
   .btn-main { font-size: 1.15rem; }
   .btn-main svg { width: 26px; height: 26px; }
   .panel { padding: 16px; }
