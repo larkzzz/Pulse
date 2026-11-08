@@ -1,0 +1,6 @@
+{% from "partials/macros.html" import field %}
+<form class="form-big" hx-post="/login" hx-target="#login-form" novalidate>
+  {{ field("email", "Электронная почта", form, errors, type="email", auto="email", placeholder="name@mail.ru") }}
+  {{ field("password", "Пароль", form, errors, type="password", auto="current-password") }}
+  <button type="submit" class="btn-main">Войти</button>
+</form>

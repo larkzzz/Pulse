@@ -45,3 +45,14 @@ SCHEDULE = [
 TAKEN_TODAY = {
     (1, "08:00"): "08:05",
 }
+
+# Учётные записи. Пациенты регистрируются сами, врачей и администратора заводит администратор.
+# В макете пароль не проверяется: подойдёт любой непустой.
+USERS = [
+    {"email": "galina.smirnova@mail.ru", "role": "patient"},
+    {"email": "safin@pestrechi-crb.ru", "role": "doctor"},
+    {"email": "admin@pestrechi-crb.ru", "role": "admin"},
+]
+
+# Куда попадает пользователь после входа.
+ROLE_HOME = {"patient": "/", "doctor": "/doctor", "admin": "/admin"}

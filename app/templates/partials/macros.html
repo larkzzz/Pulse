@@ -1,0 +1,13 @@
+{# Поле формы с подписью, подсказкой и текстом ошибки. #}
+{% macro field(name, label, form, errors, type="text", auto="", hint="", placeholder="", note="") %}
+<div class="field">
+  <label for="{{ name }}">{{ label }}{% if note %} <small>({{ note }})</small>{% endif %}</label>
+  <input id="{{ name }}" name="{{ name }}" type="{{ type }}"
+         {% if auto %}autocomplete="{{ auto }}"{% endif %}
+         {% if type != "password" %}value="{{ form.get(name, '') }}"{% endif %}
+         {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
+         {% if errors.get(name) %}aria-invalid="true" aria-describedby="{{ name }}-error"{% elif hint %}aria-describedby="{{ name }}-hint"{% endif %}>
+  {% if hint and not errors.get(name) %}<p class="panel__hint" id="{{ name }}-hint">{{ hint }}</p>{% endif %}
+  {% if errors.get(name) %}<p class="field-error" id="{{ name }}-error">{{ errors[name] }}</p>{% endif %}
+</div>
+{% endmacro %}

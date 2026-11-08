@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from fastapi import FastAPI, Form, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -91,9 +91,10 @@ def _cabinet_context(**extra) -> dict:
 
 
 @app.get("/cabinet", response_class=HTMLResponse)
-def patient_cabinet(request: Request):
+def patient_cabinet(request: Request, welcome: int = 0):
     return templates.TemplateResponse(
-        request, "patient/cabinet.html", {**_cabinet_context(), "active_tab": "cabinet"}
+        request, "patient/cabinet.html",
+        {**_cabinet_context(), "active_tab": "cabinet", "welcome": bool(welcome)},
     )
 
 
@@ -185,3 +186,88 @@ def save_notifications(
     return templates.TemplateResponse(
         request, "partials/cabinet_notifications.html", _cabinet_context(saved=True)
     )
+
+
+# ---------- Вход и регистрация ----------
+# В макете настоящей авторизации нет: проверяем только заполнение полей.
+
+def _redirect(url: str) -> Response:
+    """HTMX сам перейдёт на страницу, увидев заголовок HX-Redirect."""
+    return Response(status_code=204, headers={"HX-Redirect": url})
+
+
+@app.get("/login", response_class=HTMLResponse)
+def login_page(request: Request):
+    return templates.TemplateResponse(request, "auth/login.html", {"form": {}, "errors": {}})
+
+
+@app.post("/login", response_class=HTMLResponse)
+def login(request: Request, email: str = Form(""), password: str = Form("")):
+    email = email.strip().lower()
+    errors = {}
+    if "@" not in email:
+        errors["email"] = "Напишите почту, которую указывали при регистрации"
+    if not password:
+        errors["password"] = "Напишите пароль"
+    user = next((u for u in mock_data.USERS if u["email"] == email), None)
+    if not errors and not user:
+        errors["email"] = "Не нашли такую почту. Проверьте её или зарегистрируйтесь"
+    if errors:
+        return templates.TemplateResponse(
+            request, "partials/login_form.html", {"form": {"email": email}, "errors": errors}
+        )
+    return _redirect(mock_data.ROLE_HOME[user["role"]])
+
+
+@app.get("/register", response_class=HTMLResponse)
+def register_page(request: Request):
+    return templates.TemplateResponse(request, "auth/register.html", {"form": {}, "errors": {}})
+
+
+@app.post("/register", response_class=HTMLResponse)
+def register(
+    request: Request,
+    last_name: str = Form(""),
+    first_name: str = Form(""),
+    patronymic: str = Form(""),
+    phone: str = Form(""),
+    email: str = Form(""),
+    password: str = Form(""),
+    password2: str = Form(""),
+    consent: str = Form(""),
+):
+    form = {"last_name": last_name.strip(), "first_name": first_name.strip(),
+            "patronymic": patronymic.strip(), "phone": phone.strip(),
+            "email": email.strip().lower(), "consent": bool(consent)}
+    errors = {}
+    if not form["last_name"]:
+        errors["last_name"] = "Напишите фамилию"
+    if not form["first_name"]:
+        errors["first_name"] = "Напишите имя"
+    if sum(c.isdigit() for c in form["phone"]) < 10:
+        errors["phone"] = "Напишите номер телефона полностью, например +7 917 555-12-34"
+    if "@" not in form["email"]:
+        errors["email"] = "Нужна почта, на неё будут приходить напоминания"
+    elif any(u["email"] == form["email"] for u in mock_data.USERS):
+        errors["email"] = "Такая почта уже зарегистрирована. Попробуйте войти"
+    if len(password) < 8:
+        errors["password"] = "Пароль должен быть не короче 8 знаков"
+    elif password != password2:
+        errors["password2"] = "Пароли не совпадают"
+    if not form["consent"]:
+        errors["consent"] = "Без согласия мы не можем хранить ваши данные"
+
+    if errors:
+        return templates.TemplateResponse(
+            request, "partials/register_form.html", {"form": form, "errors": errors}
+        )
+
+    # Новый пациент: в макете просто заменяем тестового пациента и очищаем его лекарства.
+    mock_data.USERS.append({"email": form["email"], "role": "patient"})
+    mock_data.PATIENT.update(
+        last_name=form["last_name"], first_name=form["first_name"],
+        patronymic=form["patronymic"], phone=form["phone"], email=form["email"],
+    )
+    mock_data.SCHEDULE.clear()
+    mock_data.TAKEN_TODAY.clear()
+    return _redirect("/cabinet?welcome=1")

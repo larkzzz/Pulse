@@ -1,0 +1,27 @@
+{% from "partials/macros.html" import field %}
+<form class="form-big" hx-post="/register" hx-target="#register-form" novalidate>
+  {% if errors %}
+  <p class="form-alert" role="alert">Проверьте поля, отмеченные красным.</p>
+  {% endif %}
+
+  {{ field("last_name", "Фамилия", form, errors, auto="family-name") }}
+  {{ field("first_name", "Имя", form, errors, auto="given-name") }}
+  {{ field("patronymic", "Отчество", form, errors, auto="additional-name", note="если есть") }}
+  {{ field("phone", "Телефон", form, errors, type="tel", auto="tel", placeholder="+7 900 000-00-00") }}
+  {{ field("email", "Электронная почта", form, errors, type="email", auto="email", placeholder="name@mail.ru",
+           hint="На почту будут приходить напоминания о лекарствах.") }}
+  {{ field("password", "Придумайте пароль", form, errors, type="password", auto="new-password",
+           hint="Не короче 8 знаков. Запишите его, чтобы не забыть.") }}
+  {{ field("password2", "Повторите пароль", form, errors, type="password", auto="new-password") }}
+
+  <div class="field">
+    <label class="consent">
+      <input type="checkbox" name="consent" value="1" {% if form.get('consent') %}checked{% endif %}
+             {% if errors.get('consent') %}aria-invalid="true" aria-describedby="consent-error"{% endif %}>
+      <span>Согласен(на) на обработку моих персональных данных и данных о здоровье для работы приложения</span>
+    </label>
+    {% if errors.get('consent') %}<p class="field-error" id="consent-error">{{ errors.consent }}</p>{% endif %}
+  </div>
+
+  <button type="submit" class="btn-main">Зарегистрироваться</button>
+</form>

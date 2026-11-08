@@ -12,6 +12,13 @@
   <h1 class="page-head__title">Мой кабинет</h1>
 </div>
 
+{% if welcome %}
+<p class="toast-ok toast-ok--welcome" role="status">
+  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>
+  Вы зарегистрированы. Теперь добавьте лекарства из листка назначений, и мы будем напоминать о них.
+</p>
+{% endif %}
+
 <div class="cabinet-grid">
   <div class="cabinet-grid__main" id="meds">
     {% with form={}, errors={} %}{% include "partials/cabinet_meds.html" %}{% endwith %}
@@ -33,6 +40,8 @@
       </p>
       <p class="panel__hint mb-0">Врача закрепляет администратор больницы.</p>
     </section>
+
+    <a href="/login" class="btn-ghost btn-link-like">Выйти из приложения</a>
   </div>
 </div>
 {% endblock %}
