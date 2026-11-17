@@ -1,22 +1,38 @@
-"""Вход и регистрация.
+"""Вход, выход и регистрация пациента."""
+from datetime import date, datetime
 
-В макете настоящей авторизации нет: проверяем только заполнение полей.
-Регистрация пациента — по коду приглашения от врача; без кода — заявка на проверку.
-"""
-from fastapi import APIRouter, Form, Request
-from fastapi.responses import HTMLResponse
+from fastapi import APIRouter, Depends, Form, Request
+from fastapi.responses import HTMLResponse, RedirectResponse
+from sqlalchemy import select
+from sqlalchemy.orm import Session
 
-from app import mock_data
 from app.config import settings
+from app.database import get_db
+from app.models import InviteCode, RegistrationRequest, User
 from app.services.accounts import oms_is_valid, validate_profile
 from app.services.invites import check_code, normalize_code
+from app.services.security import hash_password, verify_password
 from app.web import htmx_redirect, templates
 
 router = APIRouter()
+ROLE_HOME = {"patient": "/", "doctor": "/doctor", "admin": "/admin"}
 
 
 def _auth_context(**extra) -> dict:
     return {"form": {}, "errors": {}, "registry_phone": settings.registry_phone, **extra}
+
+
+def _start_session(request: Request, user: User) -> None:
+    request.session.clear()
+    request.session["user_id"] = user.id
+
+
+def _code_status(db: Session, raw: str):
+    code = normalize_code(raw)
+    invite = db.scalar(select(InviteCode).where(InviteCode.code == code)) if code else None
+    doctor = invite.doctor if invite else None
+    error = check_code(raw, invite, doctor)
+    return invite, doctor if not error else None, error
 
 
 @router.get("/login", response_class=HTMLResponse)
@@ -25,31 +41,46 @@ def login_page(request: Request):
 
 
 @router.post("/login", response_class=HTMLResponse)
-def login(request: Request, email: str = Form(""), password: str = Form("")):
+def login(
+    request: Request,
+    email: str = Form(""),
+    password: str = Form(""),
+    db: Session = Depends(get_db),
+):
     email = email.strip().lower()
     errors = {}
     if "@" not in email:
         errors["email"] = "Напишите почту, которую указывали при регистрации"
     if not password:
         errors["password"] = "Напишите пароль"
-    user = next((u for u in mock_data.USERS if u["email"] == email), None)
+    user = db.scalar(select(User).where(User.email == email)) if not errors else None
     if not errors and not user:
         errors["email"] = "Не нашли такую почту. Проверьте её или зарегистрируйтесь"
+    elif user and not verify_password(password, user.password_hash):
+        errors["password"] = "Неверный пароль. Попробуйте ещё раз"
+    elif user and user.status == "blocked":
+        errors["email"] = "Учётная запись заблокирована. Позвоните в регистратуру"
     if errors:
         return templates.TemplateResponse(
             request, "partials/login_form.html", _auth_context(form={"email": email}, errors=errors)
         )
-    if user["status"] == "pending":
+    _start_session(request, user)
+    if user.status == "pending":
         return htmx_redirect("/pending")
-    return htmx_redirect(mock_data.ROLE_HOME[user["role"]])
+    return htmx_redirect(ROLE_HOME[user.role])
+
+
+@router.get("/logout")
+def logout(request: Request):
+    request.session.clear()
+    return RedirectResponse("/login", status_code=303)
 
 
 @router.get("/register", response_class=HTMLResponse)
-def register_page(request: Request, code: str = ""):
-    """Регистрация по коду. Ссылка из QR-кода: /register?code=PLS-4827 — код уже вписан."""
+def register_page(request: Request, code: str = "", db: Session = Depends(get_db)):
     ctx = _auth_context(mode="code", form={"code": normalize_code(code)})
     if code:
-        _, ctx["doctor"], ctx["code_error"] = check_code(code, mock_data.INVITE_CODES, mock_data.DOCTORS)
+        _, ctx["doctor"], ctx["code_error"] = _code_status(db, code)
     return templates.TemplateResponse(request, "auth/register.html", ctx)
 
 
@@ -59,9 +90,8 @@ def register_no_code_page(request: Request):
 
 
 @router.post("/register/check-code", response_class=HTMLResponse)
-def check_code_on_input(request: Request, code: str = Form("")):
-    """Проверка кода сразу при вводе: показываем врача или ошибку."""
-    _, doctor, error = check_code(code, mock_data.INVITE_CODES, mock_data.DOCTORS)
+def check_code_on_input(request: Request, code: str = Form(""), db: Session = Depends(get_db)):
+    _, doctor, error = _code_status(db, code)
     return templates.TemplateResponse(
         request, "partials/code_status.html", {"doctor": doctor, "code_error": error if code.strip() else ""}
     )
@@ -82,17 +112,19 @@ def register(
     password: str = Form(""),
     password2: str = Form(""),
     consent: str = Form(""),
+    db: Session = Depends(get_db),
 ):
     mode = "request" if mode == "request" else "code"
     form = {"code": normalize_code(code) or code.strip(), "oms": oms.strip(),
             "last_name": last_name.strip(), "first_name": first_name.strip(),
             "patronymic": patronymic.strip(), "birth_date": birth_date,
             "phone": phone.strip(), "email": email.strip().lower(), "consent": bool(consent)}
-    errors = validate_profile(form, password, password2, {u["email"] for u in mock_data.USERS})
+    taken_emails = set(db.scalars(select(User.email)).all())
+    errors = validate_profile(form, password, password2, taken_emails)
 
     invite = doctor = None
     if mode == "code":
-        invite, doctor, code_error = check_code(code, mock_data.INVITE_CODES, mock_data.DOCTORS)
+        invite, doctor, code_error = _code_status(db, code)
         if code_error:
             errors["code"] = code_error
     elif not oms_is_valid(form["oms"]):
@@ -104,32 +136,31 @@ def register(
             _auth_context(mode=mode, form=form, errors=errors, doctor=doctor),
         )
 
-    full_name = " ".join(x for x in (form["last_name"], form["first_name"], form["patronymic"]) if x)
-
-    if mode == "request":
-        mock_data.USERS.append({"email": form["email"], "role": "patient", "status": "pending"})
-        mock_data.REQUESTS.append({
-            "email": form["email"], "name": full_name, "birth_date": form["birth_date"],
-            "phone": form["phone"], "oms": form["oms"], "submitted": "сегодня", "status": "pending",
-        })
-        return htmx_redirect("/pending")
-
-    # Регистрация по коду: пациент сразу закреплён за врачом из кода.
-    # В макете просто заменяем тестового пациента и очищаем его лекарства.
-    invite["status"] = "used"
-    invite["patient_hint"] = full_name
-    mock_data.USERS.append({"email": form["email"], "role": "patient", "status": "active"})
-    mock_data.PATIENT.update(
+    user = User(
+        email=form["email"], password_hash=hash_password(password), role="patient",
+        status="pending" if mode == "request" else "active",
         last_name=form["last_name"], first_name=form["first_name"],
-        patronymic=form["patronymic"], phone=form["phone"], email=form["email"],
-        doctor=doctor["name"], doctor_role=doctor["role"],
+        patronymic=form["patronymic"], birth_date=date.fromisoformat(form["birth_date"]),
+        phone=form["phone"], doctor=doctor,
     )
-    mock_data.SCHEDULE.clear()
-    mock_data.TAKEN_TODAY.clear()
+    db.add(user)
+    if mode == "request":
+        db.flush()
+        db.add(RegistrationRequest(patient=user, oms=form["oms"], submitted_at=datetime.now()))
+    else:
+        db.flush()
+        invite.status = "used"
+        invite.patient_hint = " ".join(
+            x for x in (form["last_name"], form["first_name"], form["patronymic"]) if x
+        )
+        invite.used_by = user
+    db.commit()
+    _start_session(request, user)
+    if mode == "request":
+        return htmx_redirect("/pending")
     return htmx_redirect("/cabinet?welcome=1")
 
 
 @router.get("/pending", response_class=HTMLResponse)
 def pending_page(request: Request):
-    """Заявка без кода ждёт проверки администратором."""
     return templates.TemplateResponse(request, "auth/pending.html", _auth_context())

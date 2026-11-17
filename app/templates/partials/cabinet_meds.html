@@ -18,7 +18,7 @@
     <li class="med">
       <div class="med__info">
         <p class="med__drug">{{ med.drug }}</p>
-        <p class="med__dose">{{ med.dose }}, {{ med.meal }}{% if med.until %} · до {{ med.until }}{% endif %}</p>
+        <p class="med__dose">{{ med.dose }}, {{ med.meal }}{% if med.until %} · до {{ med.until_display }}{% endif %}</p>
         <p class="med__times">
           {% for t in med.times %}<span class="time-chip">{{ t }}</span>{% endfor %}
         </p>
@@ -88,7 +88,9 @@
 
     <div class="field">
       <label for="until">Принимать до <small>(если врач сказал)</small></label>
-      <input id="until" name="until" value="{{ form.get('until', '') }}" placeholder="Например, 31 декабря">
+      <input id="until" name="until" type="date" value="{{ form.get('until', '') }}"
+             {% if errors.get('until') %}aria-invalid="true" aria-describedby="until-error"{% endif %}>
+      {% with name="until" %}{% include "partials/field_error.html" %}{% endwith %}
     </div>
 
     <button type="submit" class="btn-main">

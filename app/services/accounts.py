@@ -1,4 +1,5 @@
 """Проверка данных при регистрации и в профиле."""
+from datetime import date
 
 
 def validate_profile(form: dict, password: str, password2: str, taken_emails: set[str]) -> dict:
@@ -8,7 +9,11 @@ def validate_profile(form: dict, password: str, password2: str, taken_emails: se
         errors["last_name"] = "Напишите фамилию"
     if not form["first_name"]:
         errors["first_name"] = "Напишите имя"
-    if not form["birth_date"]:
+    try:
+        birth_date = date.fromisoformat(form["birth_date"])
+        if birth_date >= date.today():
+            errors["birth_date"] = "Проверьте дату рождения"
+    except ValueError:
         errors["birth_date"] = "Укажите дату рождения"
     if sum(c.isdigit() for c in form["phone"]) < 10:
         errors["phone"] = "Напишите номер телефона полностью, например +7 917 555-12-34"
@@ -26,5 +31,8 @@ def validate_profile(form: dict, password: str, password2: str, taken_emails: se
 
 
 def oms_is_valid(oms: str) -> bool:
-    """В номере полиса ОМС единого образца 16 цифр."""
-    return sum(c.isdigit() for c in oms) == 16
+    """В номере полиса ОМС единого образца 16 цифр, пробелы допустимы."""
+    return (
+        sum(c.isdigit() for c in oms) == 16
+        and all(c.isdigit() or c.isspace() for c in oms)
+    )

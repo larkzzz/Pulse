@@ -22,7 +22,7 @@
              value="{{ form.get(name, '') }}"
              {% if errors.get(name) %}aria-invalid="true" aria-describedby="{{ name }}-error"{% endif %}>
       {% if name == "email" %}<p class="panel__hint mb-0">На почту придёт копия каждого напоминания.</p>{% endif %}
-      {% include "partials/field_error.html" %}
+      {% with name=name %}{% include "partials/field_error.html" %}{% endwith %}
     </div>
     {% endfor %}
 

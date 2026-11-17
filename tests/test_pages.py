@@ -1,33 +1,70 @@
 import pytest
 
+from app.services.demo import DEMO_PASSWORD
+
 
 @pytest.mark.parametrize("url", [
-    "/", "/cabinet", "/login", "/register", "/register?code=PLS-4827", "/register/no-code", "/pending",
+    "/login", "/register", "/register?code=PLS-4827", "/register/no-code", "/pending",
 ])
-def test_pages_open(client, url):
+def test_public_pages_open(client, url):
     assert client.get(url).status_code == 200
 
 
-def test_take_intake_marks_next(client):
-    r = client.post("/intakes/2/1300/take")
-    assert r.status_code == 200 and "Метформин принят" in r.text
+@pytest.mark.parametrize("url", ["/", "/cabinet"])
+def test_patient_pages_require_login(client, url):
+    response = client.get(url, follow_redirects=False)
+    assert response.status_code == 303 and response.headers["location"] == "/login"
 
 
-def test_add_medication_requires_fields(client):
-    r = client.post("/cabinet/medications", data={})
-    assert "Напишите название лекарства" in r.text
+@pytest.mark.parametrize("url", ["/", "/cabinet"])
+def test_patient_pages_open(patient_client, url):
+    assert patient_client.get(url).status_code == 200
 
 
-def test_add_medication(client):
-    r = client.post("/cabinet/medications", data={"drug": "Амлодипин", "dose": "5 мг", "time1": "09:30"})
-    assert "Амлодипин добавлен" in r.text
+def test_take_intake_marks_next(patient_client):
+    response = patient_client.post("/intakes/2/1300/take")
+    assert response.status_code == 200 and "Метформин принят" in response.text
+    assert "Принято 2 из 4" in response.text
 
 
-def test_login_redirects_by_status(client):
-    r = client.post("/login", data={"email": "galina.smirnova@mail.ru", "password": "x"})
-    assert r.headers["HX-Redirect"] == "/"
-    r = client.post("/login", data={"email": "petrov@mail.ru", "password": "x"})
-    assert r.headers["HX-Redirect"] == "/pending"
+def test_take_intake_rejects_invalid_time(patient_client):
+    assert patient_client.post("/intakes/2/9999/take").status_code == 404
+
+
+def test_add_medication_requires_fields(patient_client):
+    response = patient_client.post("/cabinet/medications", data={})
+    assert "Напишите название лекарства" in response.text
+
+
+def test_add_and_delete_medication(patient_client):
+    response = patient_client.post(
+        "/cabinet/medications",
+        data={"drug": "Амлодипин", "dose": "5 мг", "time1": "09:30", "until": "2027-12-31"},
+    )
+    assert "Амлодипин добавлен" in response.text
+    assert "до 31 декабря" in response.text
+    response = patient_client.delete("/cabinet/medications/4")
+    assert response.status_code == 200
+    assert '<p class="med__drug">Амлодипин</p>' not in response.text
+
+
+def test_login_checks_password_and_redirects_by_status(client):
+    response = client.post(
+        "/login", data={"email": "galina.smirnova@mail.ru", "password": "wrong-password"}
+    )
+    assert "Неверный пароль" in response.text
+    response = client.post(
+        "/login", data={"email": "galina.smirnova@mail.ru", "password": DEMO_PASSWORD}
+    )
+    assert response.headers["HX-Redirect"] == "/"
+    client.get("/logout")
+    response = client.post("/login", data={"email": "petrov@mail.ru", "password": DEMO_PASSWORD})
+    assert response.headers["HX-Redirect"] == "/pending"
+
+
+def test_logout_clears_session(patient_client):
+    patient_client.get("/logout")
+    assert patient_client.get("/", follow_redirects=False).status_code == 303
 
 
 def _profile(**extra):
@@ -37,16 +74,44 @@ def _profile(**extra):
 
 
 def test_register_by_code_assigns_doctor(client):
-    r = client.post("/register", data=_profile(mode="code", code="pls 3159"))
-    assert r.headers["HX-Redirect"] == "/cabinet?welcome=1"
-    assert "Гарипова Алсу Маратовна" in client.get("/cabinet?welcome=1").text
-    # тот же код второй раз не подходит
-    r = client.post("/register", data=_profile(mode="code", code="PLS-3159", email="other@mail.ru"))
-    assert "уже зарегистрировались" in r.text
+    response = client.post("/register", data=_profile(mode="code", code="pls 3159"))
+    assert response.headers["HX-Redirect"] == "/cabinet?welcome=1"
+    cabinet = client.get("/cabinet?welcome=1")
+    assert "Гарипова Алсу Маратовна" in cabinet.text
+    assert "Лекарств пока нет" in cabinet.text
+    response = client.post("/register", data=_profile(mode="code", code="PLS-3159", email="other@mail.ru"))
+    assert "уже зарегистрировались" in response.text
 
 
 def test_register_request_without_code(client):
-    r = client.post("/register", data=_profile(mode="request", oms="123"))
-    assert "16 цифр" in r.text
-    r = client.post("/register", data=_profile(mode="request", oms="1655 1111 2222 3333"))
-    assert r.headers["HX-Redirect"] == "/pending"
+    response = client.post("/register", data=_profile(mode="request", oms="123"))
+    assert "16 цифр" in response.text
+    response = client.post("/register", data=_profile(mode="request", oms="1655 1111 2222 3333"))
+    assert response.headers["HX-Redirect"] == "/pending"
+    assert client.get("/", follow_redirects=False).status_code == 303
+
+
+def test_profile_email_is_used_for_login(patient_client):
+    response = patient_client.post("/cabinet/profile", data={
+        "last_name": "Смирнова", "first_name": "Галина", "patronymic": "Петровна",
+        "phone": "+7 917 555-12-34", "email": "new.galina@mail.ru",
+    })
+    assert "Сохранено" in response.text
+    patient_client.get("/logout")
+    response = patient_client.post(
+        "/login", data={"email": "new.galina@mail.ru", "password": DEMO_PASSWORD}
+    )
+    assert response.headers["HX-Redirect"] == "/"
+
+
+def test_patient_cannot_delete_another_patients_medication(client):
+    client.post("/register", data=_profile(mode="code", code="PLS-4827"))
+    assert client.delete("/cabinet/medications/1").status_code == 404
+
+
+def test_staff_role_cannot_open_patient_pages(client):
+    response = client.post(
+        "/login", data={"email": "safin@pestrechi-crb.ru", "password": DEMO_PASSWORD}
+    )
+    assert response.headers["HX-Redirect"] == "/doctor"
+    assert client.get("/").status_code == 403

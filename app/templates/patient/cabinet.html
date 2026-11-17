@@ -15,7 +15,7 @@
 {% if welcome %}
 <p class="toast-ok toast-ok--welcome" role="status">
   <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>
-  Вы зарегистрированы, ваш врач — {{ patient.doctor }}. Теперь добавьте лекарства из листка назначений, и мы будем напоминать о них.
+  Вы зарегистрированы, ваш врач — {{ patient.doctor.name }}. Теперь добавьте лекарства из листка назначений, и мы будем напоминать о них.
 </p>
 {% endif %}
 
@@ -26,7 +26,7 @@
 
   <div class="cabinet-grid__side">
     <div id="profile">
-      {% with form=patient, errors={} %}{% include "partials/cabinet_profile.html" %}{% endwith %}
+      {% with form=profile_form, errors={} %}{% include "partials/cabinet_profile.html" %}{% endwith %}
     </div>
     <div id="notifications">
       {% include "partials/cabinet_notifications.html" %}
@@ -35,13 +35,13 @@
     <section class="panel" aria-labelledby="doctor-title">
       <h2 class="panel__title" id="doctor-title">Мой врач</h2>
       <p class="doctor-line">
-        <strong>{{ patient.doctor }}</strong><br>
-        {{ patient.doctor_role }}, {{ patient.clinic }}
+        <strong>{{ patient.doctor.name }}</strong><br>
+        {{ patient.doctor.role }}, {{ patient.clinic }}
       </p>
       <p class="panel__hint mb-0">Врача закрепляет администратор больницы.</p>
     </section>
 
-    <a href="/login" class="btn-ghost btn-link-like">Выйти из приложения</a>
+    <a href="/logout" class="btn-ghost btn-link-like">Выйти из приложения</a>
   </div>
 </div>
 {% endblock %}
