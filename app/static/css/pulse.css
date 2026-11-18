@@ -622,6 +622,7 @@ a.urgent__note { background: var(--pulse-surface); }
 .help-panel .btn-link-like { padding: 8px 12px; text-align: center; }
 .help-panel :disabled { cursor: wait; opacity: .75; }
 .help-choice { display: grid; gap: 8px; margin-top: 16px; }
+.help-locate { margin-top: 4px; padding: 8px 12px; }
 .help-choice label { font-weight: 600; }
 .help-choice select { min-height: 56px; }
 .help-status { margin: 8px 0 0; color: var(--pulse-muted); }

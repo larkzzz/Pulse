@@ -32,7 +32,7 @@ class Settings:
     yandex_folder_id: str = _env("YANDEX_FOLDER_ID")
     yandex_api_key: str = _env("YANDEX_API_KEY")
 
-    # Яндекс Карты (JavaScript API) — карта и маршрут до ФАП
+    # Яндекс Карты (JavaScript API) — только встроенная карта ФАП; маршрут работает без ключа
     yandex_maps_api_key: str = _env("YANDEX_MAPS_API_KEY")
 
     # Почта для дублирующих писем с напоминаниями

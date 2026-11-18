@@ -62,7 +62,7 @@
 
   function prepareMap() {
     const toggle = result?.querySelector("[data-show-map]");
-    if (!toggle) return () => {};
+    if (!toggle) return { dispose() {}, async show() {} };
     const mapElement = result.querySelector("[data-map]");
     const mapStatus = result.querySelector("[data-map-status]");
     let map, renderController;
@@ -71,13 +71,13 @@
       map?.destroy();
       map = undefined;
     };
-    toggle.hidden = false;
 
-    toggle.addEventListener("click", async () => {
+    async function show() {
       if (map) {
-        mapElement.hidden = !mapElement.hidden;
-        toggle.textContent = mapElement.hidden ? "Показать карту" : "Скрыть карту";
-        toggle.setAttribute("aria-expanded", String(!mapElement.hidden));
+        mapElement.hidden = false;
+        toggle.textContent = "Скрыть карту";
+        toggle.setAttribute("aria-expanded", "true");
+        mapStatus.textContent = "";
         return;
       }
       toggle.disabled = true;
@@ -115,18 +115,45 @@
         mapElement.removeAttribute("aria-busy");
         toggle.disabled = false;
       }
+    }
+
+    toggle.hidden = false;
+    toggle.addEventListener("click", () => {
+      if (map && !mapElement.hidden) {
+        mapElement.hidden = true;
+        toggle.textContent = "Показать карту";
+        toggle.setAttribute("aria-expanded", "false");
+      } else {
+        show();
+      }
     });
-    return dispose;
+    return { dispose, show };
   }
 
-  let disposeMap = prepareMap();
+  function setRouteFromPatient(coords, fap) {
+    const route = result.querySelector("[data-fap-route]");
+    const latitude = Number(fap.dataset.latitude);
+    const longitude = Number(fap.dataset.longitude);
+    if (!route || !Number.isFinite(latitude) || !Number.isFinite(longitude)) return;
+    const params = new URLSearchParams({
+      mode: "routes",
+      rtext: `${coords.latitude},${coords.longitude}~${latitude},${longitude}`,
+      rtt: "auto",
+    });
+    route.href = `https://yandex.ru/maps/?${params}`;
+    route.textContent = "Открыть маршрут от моего места";
+    const note = result.querySelector("[data-route-note]");
+    if (note) note.textContent = "В Яндекс Картах уже будут указаны ваше место и медпункт.";
+  }
+
+  let mapView = prepareMap();
   if (!locate) return;
   if (!window.isSecureContext || !navigator.geolocation) {
-    status.textContent = "Местоположение здесь недоступно. Выберите медпункт из списка.";
+    locate.disabled = true;
+    status.textContent = "Автоматический поиск здесь недоступен. Выберите медпункт из списка.";
     return;
   }
 
-  locate.hidden = false;
   locate.addEventListener("click", () => {
     locate.disabled = true;
     status.textContent = "Определяем ваше местоположение…";
@@ -143,12 +170,26 @@
         });
         if (!response.ok) throw new Error();
         const html = await response.text();
-        disposeMap();
+        mapView.dispose();
         result.innerHTML = html;
         const fap = result.querySelector("[data-fap-id]");
-        if (fap) select.value = fap.dataset.fapId;
-        status.textContent = fap ? "Нашли ближайший ФАП. Адрес указан ниже." : "";
-        disposeMap = prepareMap();
+        mapView = prepareMap();
+        if (fap) {
+          select.value = fap.dataset.fapId;
+          setRouteFromPatient(coords, fap);
+          const hasMap = Boolean(result.querySelector("[data-map]"));
+          status.textContent = hasMap
+            ? "Нашли ближайший медпункт. Ниже — адрес, карта и маршрут от вашего места."
+            : "Нашли ближайший медпункт. Ниже — адрес и маршрут от вашего места.";
+          result.scrollIntoView({
+            behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+            block: "start",
+          });
+          // После поиска карта открывается сразу, отдельное нажатие не нужно.
+          mapView.show();
+        } else {
+          status.textContent = "";
+        }
       } catch {
         status.textContent = "Поиск не удался. Выберите медпункт из списка.";
       } finally {
@@ -157,9 +198,9 @@
       }
     }, (error) => {
       status.textContent = error.code === 1
-        ? "Нет доступа к местоположению. Выберите медпункт из списка."
+        ? "Нет доступа к местоположению. Разрешите его в настройках браузера или выберите медпункт из списка."
         : "Не удалось определить местоположение. Выберите медпункт из списка.";
       locate.disabled = false;
-    }, { timeout: 8000 });
+    }, { timeout: 15000, maximumAge: 300000 });
   });
 })();

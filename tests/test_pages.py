@@ -1,6 +1,7 @@
 from dataclasses import replace
 from datetime import datetime, timedelta
 from hashlib import sha256
+import re
 
 import pytest
 from fastapi.testclient import TestClient
@@ -49,7 +50,10 @@ def test_help_opens_with_emergency_and_registry_calls(patient_client, fap_direct
     assert 'href="tel:+78436731234"' in response.text
     assert "Регистратура поможет связаться с вашим врачом." in response.text
     assert 'href="/cabinet"' in response.text
-    assert "Найти ближайший ФАП" in response.text
+    assert "Найти медпункт рядом" in response.text
+    locate_tag = re.search(r'<button[^>]+id="help-locate"[^>]*>', response.text)
+    assert locate_tag and "hidden" not in locate_tag.group(0)
+    assert "Мы его не сохраняем" in response.text
     assert "Выбрать медпункт вручную" in response.text
 
 
@@ -74,7 +78,7 @@ def test_help_manual_choice_falls_back_to_address_if_coordinates_unusable(patien
         db.add(fap)
     response = patient_client.get("/help", params={"fap_id": fap.id})
     assert "Найти адрес в Яндекс Картах" in response.text
-    assert "Найти ближайший ФАП" not in response.text
+    assert "Найти медпункт рядом" not in response.text
     assert "Показать карту" not in response.text
     assert "tel:88000000001" not in response.text
 
@@ -87,6 +91,8 @@ def test_help_nearest_handles_good_and_bad_coordinates(patient_client, fap_direc
     assert "Ближайший по прямой" in response.text and "ул. Тестовая, 2" in response.text
     assert "ул. Тестовая, 1" not in response.text
     assert "49.71" not in response.text
+    assert 'data-latitude="55.69" data-longitude="49.73"' in response.text
+    assert "data-fap-route" in response.text
     assert "Показать карту" in response.text
     for invalid in ("не число", "nan", "91", ""):
         response = patient_client.post("/help/nearest", data={"latitude": invalid, "longitude": "49"})
@@ -110,7 +116,7 @@ def test_help_remains_available_with_empty_directory(patient_client):
     response = patient_client.get("/help")
     assert 'href="tel:112"' in response.text
     assert "Медпункты пока не добавлены" in response.text
-    assert "Найти ближайший ФАП" not in response.text
+    assert "Найти медпункт рядом" not in response.text
     assert "Не удалось найти ближайший медпункт" in patient_client.post(
         "/help/nearest", data={"latitude": "55.75", "longitude": "49.65"}
     ).text

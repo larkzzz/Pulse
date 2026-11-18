@@ -39,8 +39,9 @@
     {% if faps %}
     <p>Найдите медпункт рядом с вами или выберите его из списка.</p>
     {% if has_mapped_faps %}
-    <button type="button" class="btn-second" id="help-locate"
-            data-url="{{ url_for('find_nearest_fap').path }}" hidden>Найти ближайший ФАП</button>
+    <button type="button" class="btn-second help-locate" id="help-locate"
+            data-url="{{ url_for('find_nearest_fap').path }}">Найти медпункт рядом</button>
+    <p class="help-status">Телефон спросит разрешение на определение местоположения. Мы его не сохраняем.</p>
     {% endif %}
     <p class="help-status" id="help-location-status" role="status"></p>
     <form class="help-choice" action="/help#help-fap-result" method="get">
