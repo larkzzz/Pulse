@@ -1,0 +1,54 @@
+{% extends "admin/layout.html" %}
+{% block title %}Пациенты · Пульс{% endblock %}
+
+{% block admin_content %}
+<div class="admin-page-head">
+  <div>
+    <h1>Пациенты</h1>
+    <p>Здесь можно перераспределить активных пациентов между врачами.</p>
+  </div>
+</div>
+
+<section class="panel admin-panel" aria-labelledby="workload-title">
+  <h2 class="panel__title" id="workload-title">Число пациентов у врачей</h2>
+  <div class="admin-workload">
+    {% for row in doctor_rows %}
+    <div class="admin-workload__item">
+      <strong>{{ row.patient_count }}</strong>
+      <span>{{ row.doctor.name }}<small>{{ row.doctor.role }}</small></span>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="panel admin-panel" aria-labelledby="patient-list-title">
+  <h2 class="panel__title" id="patient-list-title">Активные пациенты</h2>
+  {% if patients %}
+  <div class="admin-table-wrap">
+    <table class="admin-table">
+      <thead><tr><th>Пациент</th><th>Дата рождения</th><th>Телефон</th><th>Текущий врач</th><th>Новый врач</th><th>Действие</th></tr></thead>
+      <tbody>
+      {% for patient in patients %}
+        <tr>
+          <td data-label="Пациент"><strong>{{ patient.last_name }} {{ patient.first_name }} {{ patient.patronymic }}</strong><span class="admin-cell-note">{{ patient.email }}</span></td>
+          <td data-label="Дата рождения">{{ patient.birth_date.strftime('%d.%m.%Y') if patient.birth_date else '—' }}</td>
+          <td data-label="Телефон">{{ patient.phone }}</td>
+          <td data-label="Текущий врач">{{ patient.doctor.name if patient.doctor else 'Не назначен' }}</td>
+          <td data-label="Новый врач" colspan="2">
+            <form class="admin-inline-form" method="post" action="/admin/patients/{{ patient.id }}/doctor">
+              <label class="visually-hidden" for="patient-doctor-{{ patient.id }}">Новый врач для {{ patient.last_name }} {{ patient.first_name }}</label>
+              <select class="admin-input" id="patient-doctor-{{ patient.id }}" name="doctor_id" required>
+                <option value="">Выберите врача</option>
+                {% for doctor in doctors %}<option value="{{ doctor.id }}" {% if patient.doctor_id == doctor.id %}selected{% endif %}>{{ doctor.name }} — {{ doctor.role }}</option>{% endfor %}
+              </select>
+              <button class="btn-ghost admin-button" type="submit">Сохранить</button>
+            </form>
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}<p class="panel__empty">Активных пациентов пока нет.</p>{% endif %}
+</section>
+{% endblock %}

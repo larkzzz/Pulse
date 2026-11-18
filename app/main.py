@@ -12,14 +12,15 @@ from starlette.middleware.sessions import SessionMiddleware
 from app import models
 from app.access import AccessDenied, AuthenticationRequired
 from app.config import BASE_DIR, settings
-from app.database import Base, SessionLocal, engine
-from app.routers import auth, cabinet, patient
+from app.database import Base, SessionLocal, engine, migrate_schema
+from app.routers import admin, auth, cabinet, patient
 from app.services.demo import seed_demo_data
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     Base.metadata.create_all(bind=engine)
+    migrate_schema()
     if settings.is_dev:
         with SessionLocal() as db:
             seed_demo_data(db)
@@ -52,3 +53,4 @@ def access_denied(_: Request, __: AccessDenied):
 app.include_router(auth.router)
 app.include_router(patient.router)
 app.include_router(cabinet.router)
+app.include_router(admin.router)

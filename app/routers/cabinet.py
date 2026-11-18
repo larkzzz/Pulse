@@ -9,14 +9,11 @@ from sqlalchemy.orm import Session
 from app.access import require_roles
 from app.database import get_db
 from app.models import Medication, User
+from app.services.admin import list_drugs
 from app.services.intakes import today_label
 from app.web import templates
 
 router = APIRouter()
-DRUGS = [
-    "Аторвастатин", "Амлодипин", "Бисопролол", "Варфарин", "Лозартан",
-    "Метформин", "Омепразол", "Эналаприл", "Ацетилсалициловая кислота",
-]
 MEAL_OPTIONS = ["до еды", "во время еды", "после еды", "не важно"]
 
 
@@ -35,7 +32,7 @@ def _cabinet_context(db: Session, user: User, **extra) -> dict:
             "email": user.notification_email,
             "voice": user.notification_voice,
         },
-        "drugs": DRUGS,
+        "drugs": [drug.name for drug in list_drugs(db)],
         "meal_options": MEAL_OPTIONS,
         **extra,
     }

@@ -1,0 +1,61 @@
+{% extends "admin/layout.html" %}
+{% block title %}Заявки без кода · Пульс{% endblock %}
+
+{% block admin_content %}
+<div class="admin-page-head">
+  <div>
+    <h1>Заявки без кода</h1>
+    <p>Сверьте данные с картой пациента в ЦРБ, затем подтвердите или отклоните заявку.</p>
+  </div>
+</div>
+
+{% if requests %}
+<div class="admin-request-list">
+  {% for registration in requests %}
+  <article class="panel admin-request">
+    <div class="admin-request__head">
+      <div>
+        <h2>{{ registration.patient.last_name }} {{ registration.patient.first_name }} {{ registration.patient.patronymic }}</h2>
+        <p>Подана {{ registration.submitted_at.strftime('%d.%m.%Y в %H:%M') }}</p>
+      </div>
+      <span class="admin-status admin-status--{{ registration.status }}">{{ request_statuses[registration.status] }}</span>
+    </div>
+    <dl class="admin-details">
+      <div><dt>Дата рождения</dt><dd>{{ registration.patient.birth_date.strftime('%d.%m.%Y') }}</dd></div>
+      <div><dt>Полис ОМС</dt><dd>{{ registration.oms }}</dd></div>
+      <div><dt>Телефон</dt><dd>{{ registration.patient.phone }}</dd></div>
+      <div><dt>Почта</dt><dd>{{ registration.patient.email }}</dd></div>
+    </dl>
+
+    {% if registration.status == 'pending' %}
+    <form class="admin-review" method="post" action="/admin/requests/{{ registration.id }}/review">
+      <div class="field">
+        <label for="request-doctor-{{ registration.id }}">Врач при подтверждении</label>
+        <select class="admin-input" id="request-doctor-{{ registration.id }}" name="doctor_id">
+          <option value="">Выберите врача</option>
+          {% for doctor in doctors %}<option value="{{ doctor.id }}">{{ doctor.name }} — {{ doctor.role }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field admin-review__reason">
+        <label for="request-reason-{{ registration.id }}">Причина отказа</label>
+        <textarea class="admin-input" id="request-reason-{{ registration.id }}" name="rejection_reason" rows="2" placeholder="Например: данные не совпали с картой пациента"></textarea>
+      </div>
+      <div class="admin-review__actions">
+        <button class="btn-main admin-submit" type="submit" name="decision" value="approve">Подтвердить и прикрепить</button>
+        <button class="btn-ghost admin-button" type="submit" name="decision" value="reject">Отклонить заявку</button>
+      </div>
+    </form>
+    {% else %}
+    <div class="admin-request__result">
+      {% if registration.status == 'approved' %}<p><strong>Врач:</strong> {{ registration.patient.doctor.name }}</p>{% endif %}
+      {% if registration.rejection_reason %}<p><strong>Причина отказа:</strong> {{ registration.rejection_reason }}</p>{% endif %}
+      {% if registration.reviewer %}<p><strong>Рассмотрел:</strong> {{ registration.reviewer.email }}, {{ registration.reviewed_at.strftime('%d.%m.%Y в %H:%M') }}</p>{% endif %}
+    </div>
+    {% endif %}
+  </article>
+  {% endfor %}
+</div>
+{% else %}
+<section class="panel admin-panel"><p class="panel__empty">Заявок пока нет.</p></section>
+{% endif %}
+{% endblock %}

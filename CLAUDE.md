@@ -31,7 +31,7 @@ python -m pytest -q           # тесты — перед каждым комм�
 - `app/database.py`, `app/models.py` — подключение к SQLite/PostgreSQL и модели SQLAlchemy.
 - `app/access.py` — текущий пользователь и разграничение ролей.
 - `app/web.py` — шаблоны и `htmx_redirect`.
-- `app/routers/` — маршруты по разделам: `auth` (вход, регистрация), `patient` (главная), `cabinet` (кабинет пациента).
+- `app/routers/` — маршруты по разделам: `auth` (вход, регистрация), `patient` (главная), `cabinet` (кабинет пациента), `admin` (кабинет администратора).
 - `app/services/` — логика без привязки к HTTP: её и тестируем. `demo.py` заполняет базу в разработке.
 - `app/templates/` — страницы; `partials/` — куски, которые перерисовывает HTMX.
 - `app/static/css/pulse.css` — все стили, цвета заданы переменными в `:root`.

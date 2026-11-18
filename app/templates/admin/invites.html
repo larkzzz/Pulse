@@ -1,0 +1,65 @@
+{% extends "admin/layout.html" %}
+{% block title %}Коды приглашения · Пульс{% endblock %}
+
+{% block admin_content %}
+<div class="admin-page-head">
+  <div>
+    <h1>Коды приглашения</h1>
+    <p>Код действует 30 дней и позволяет зарегистрироваться один раз.</p>
+  </div>
+</div>
+
+<section class="panel admin-panel" aria-labelledby="invite-create-title">
+  <h2 class="panel__title" id="invite-create-title">Выдать новый код</h2>
+  <form class="admin-form admin-form--invite" method="post" action="/admin/invites">
+    <div class="field">
+      <label for="invite-doctor">Врач</label>
+      <select class="admin-input" id="invite-doctor" name="doctor_id" required>
+        <option value="">Выберите врача</option>
+        {% for doctor in doctors %}
+        <option value="{{ doctor.id }}" {% if form.get('doctor_id') == doctor.id|string %}selected{% endif %}>{{ doctor.name }} — {{ doctor.role }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label for="invite-patient">Фамилия и инициалы пациента</label>
+      <input class="admin-input" id="invite-patient" name="patient_hint" value="{{ form.get('patient_hint', '') }}" placeholder="Иванов П. С." maxlength="200" required>
+    </div>
+    <button class="btn-main admin-submit" type="submit">Выдать код</button>
+  </form>
+  {% if not doctors %}<p class="admin-hint">Сначала добавьте врача или разблокируйте его учётную запись.</p>{% endif %}
+</section>
+
+<section class="panel admin-panel" aria-labelledby="invite-list-title">
+  <h2 class="panel__title" id="invite-list-title">Выданные коды</h2>
+  {% if invites %}
+  <div class="admin-table-wrap">
+    <table class="admin-table">
+      <thead><tr><th>Код</th><th>Пациент</th><th>Врач</th><th>Выдан</th><th>Действует до</th><th>Статус</th><th>Действие</th></tr></thead>
+      <tbody>
+      {% for invite, status in invites %}
+        <tr>
+          <td data-label="Код"><strong class="admin-code">{{ invite.code }}</strong></td>
+          <td data-label="Пациент">
+            {{ invite.patient_hint }}
+            {% if invite.used_by %}<span class="admin-cell-note">{{ invite.used_by.last_name }} {{ invite.used_by.first_name }} {{ invite.used_by.patronymic }}</span>{% endif %}
+          </td>
+          <td data-label="Врач">{{ invite.doctor.name }}<span class="admin-cell-note">{{ invite.doctor.role }}</span></td>
+          <td data-label="Выдан">{{ invite.issued_at.strftime('%d.%m.%Y') }}</td>
+          <td data-label="Действует до">{{ invite.expires_at.strftime('%d.%m.%Y') }}</td>
+          <td data-label="Статус"><span class="admin-status admin-status--{{ status }}">{{ invite_statuses[status] }}</span></td>
+          <td data-label="Действие">
+            {% if status == 'new' %}
+            <form method="post" action="/admin/invites/{{ invite.id }}/revoke">
+              <button class="btn-ghost admin-button" type="submit">Отменить код</button>
+            </form>
+            {% else %}—{% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}<p class="panel__empty">Кодов пока нет.</p>{% endif %}
+</section>
+{% endblock %}

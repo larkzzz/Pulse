@@ -1,6 +1,6 @@
 from datetime import date, datetime
 
-from sqlalchemy import JSON, Boolean, Date, DateTime, ForeignKey, String, Text, UniqueConstraint
+from sqlalchemy import JSON, Boolean, Date, DateTime, Float, ForeignKey, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -10,10 +10,18 @@ class Doctor(Base):
     __tablename__ = "doctors"
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id", use_alter=True), unique=True, nullable=True
+    )
     name: Mapped[str] = mapped_column(String(200))
     role: Mapped[str] = mapped_column(String(100))
 
-    patients: Mapped[list["User"]] = relationship(back_populates="doctor")
+    account: Mapped["User | None"] = relationship(
+        back_populates="doctor_account", foreign_keys=[user_id]
+    )
+    patients: Mapped[list["User"]] = relationship(
+        back_populates="doctor", foreign_keys="User.doctor_id"
+    )
     invites: Mapped[list["InviteCode"]] = relationship(back_populates="doctor")
 
 
@@ -36,7 +44,12 @@ class User(Base):
     notification_email: Mapped[bool] = mapped_column(Boolean, default=True)
     notification_voice: Mapped[bool] = mapped_column(Boolean, default=True)
 
-    doctor: Mapped[Doctor | None] = relationship(back_populates="patients")
+    doctor: Mapped[Doctor | None] = relationship(
+        back_populates="patients", foreign_keys=[doctor_id]
+    )
+    doctor_account: Mapped[Doctor | None] = relationship(
+        back_populates="account", foreign_keys="Doctor.user_id"
+    )
     medications: Mapped[list["Medication"]] = relationship(
         back_populates="patient", cascade="all, delete-orphan"
     )
@@ -62,6 +75,14 @@ class InviteCode(Base):
     used_by: Mapped[User | None] = relationship(foreign_keys=[used_by_id])
 
 
+class InviteAttempt(Base):
+    __tablename__ = "invite_attempts"
+
+    key: Mapped[str] = mapped_column(String(64), primary_key=True)
+    failures: Mapped[int]
+    expires_at: Mapped[datetime] = mapped_column(DateTime, index=True)
+
+
 class RegistrationRequest(Base):
     __tablename__ = "registration_requests"
 
@@ -75,6 +96,26 @@ class RegistrationRequest(Base):
     reviewed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     patient: Mapped[User] = relationship(foreign_keys=[user_id], back_populates="registration_request")
+    reviewer: Mapped[User | None] = relationship(foreign_keys=[reviewed_by_id])
+
+
+class Fap(Base):
+    __tablename__ = "faps"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(200))
+    village: Mapped[str] = mapped_column(String(150))
+    address: Mapped[str] = mapped_column(String(300))
+    phone: Mapped[str] = mapped_column(String(40), default="")
+    latitude: Mapped[float | None] = mapped_column(Float, nullable=True)
+    longitude: Mapped[float | None] = mapped_column(Float, nullable=True)
+
+
+class Drug(Base):
+    __tablename__ = "drugs"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(200), unique=True)
 
 
 class Medication(Base):

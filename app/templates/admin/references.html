@@ -1,0 +1,82 @@
+{% extends "admin/layout.html" %}
+{% block title %}Справочники · Пульс{% endblock %}
+
+{% block admin_content %}
+<div class="admin-page-head">
+  <div>
+    <h1>Справочники</h1>
+    <p>Эти данные используются в расписании лекарств и на экране помощи.</p>
+  </div>
+</div>
+
+<nav class="admin-subnav" aria-label="Виды справочников">
+  <a {% if reference_kind == 'faps' %}class="is-active" aria-current="page"{% endif %} href="/admin/references/faps">ФАП</a>
+  <a {% if reference_kind == 'drugs' %}class="is-active" aria-current="page"{% endif %} href="/admin/references/drugs">Препараты</a>
+</nav>
+
+{% if reference_kind == 'faps' %}
+<section class="panel admin-panel" aria-labelledby="fap-create-title">
+  <h2 class="panel__title" id="fap-create-title">Добавить ФАП</h2>
+  <form class="admin-form admin-form--fap" method="post" action="/admin/references/faps">
+    <div class="field"><label for="fap-name">Название</label><input class="admin-input" id="fap-name" name="name" value="{{ form.get('name', '') }}" placeholder="ФАП села Пестречи" required></div>
+    <div class="field"><label for="fap-village">Населённый пункт</label><input class="admin-input" id="fap-village" name="village" value="{{ form.get('village', '') }}" required></div>
+    <div class="field admin-form__wide"><label for="fap-address">Адрес</label><input class="admin-input" id="fap-address" name="address" value="{{ form.get('address', '') }}" required></div>
+    <div class="field"><label for="fap-phone">Телефон</label><input class="admin-input" id="fap-phone" name="phone" value="{{ form.get('phone', '') }}"></div>
+    <div class="field"><label for="fap-latitude">Широта</label><input class="admin-input" id="fap-latitude" name="latitude" value="{{ form.get('latitude', '') }}" placeholder="55.751244"></div>
+    <div class="field"><label for="fap-longitude">Долгота</label><input class="admin-input" id="fap-longitude" name="longitude" value="{{ form.get('longitude', '') }}" placeholder="37.618423"></div>
+    <button class="btn-main admin-submit" type="submit">Добавить ФАП</button>
+  </form>
+</section>
+
+<div class="admin-fap-list">
+  {% for fap in faps %}
+  <section class="panel admin-fap" aria-label="ФАП: {{ fap.name }}">
+    <form class="admin-form admin-form--fap" method="post" action="/admin/references/faps/{{ fap.id }}">
+      <div class="field"><label for="fap-name-{{ fap.id }}">Название</label><input class="admin-input" id="fap-name-{{ fap.id }}" name="name" value="{{ fap.name }}" required></div>
+      <div class="field"><label for="fap-village-{{ fap.id }}">Населённый пункт</label><input class="admin-input" id="fap-village-{{ fap.id }}" name="village" value="{{ fap.village }}" required></div>
+      <div class="field admin-form__wide"><label for="fap-address-{{ fap.id }}">Адрес</label><input class="admin-input" id="fap-address-{{ fap.id }}" name="address" value="{{ fap.address }}" required></div>
+      <div class="field"><label for="fap-phone-{{ fap.id }}">Телефон</label><input class="admin-input" id="fap-phone-{{ fap.id }}" name="phone" value="{{ fap.phone }}"></div>
+      <div class="field"><label for="fap-latitude-{{ fap.id }}">Широта</label><input class="admin-input" id="fap-latitude-{{ fap.id }}" name="latitude" value="{{ fap.latitude if fap.latitude is not none else '' }}"></div>
+      <div class="field"><label for="fap-longitude-{{ fap.id }}">Долгота</label><input class="admin-input" id="fap-longitude-{{ fap.id }}" name="longitude" value="{{ fap.longitude if fap.longitude is not none else '' }}"></div>
+      <div class="admin-form__actions"><button class="btn-ghost admin-button" type="submit">Сохранить изменения</button></div>
+    </form>
+    <form class="admin-delete-form" method="post" action="/admin/references/faps/{{ fap.id }}/delete"><button class="admin-text-button" type="submit">Удалить ФАП</button></form>
+  </section>
+  {% else %}<section class="panel admin-panel"><p class="panel__empty">В справочнике пока нет ФАП.</p></section>{% endfor %}
+</div>
+{% else %}
+<section class="panel admin-panel" aria-labelledby="drug-create-title">
+  <h2 class="panel__title" id="drug-create-title">Добавить препарат</h2>
+  <form class="admin-form admin-form--drug" method="post" action="/admin/references/drugs">
+    <div class="field"><label for="drug-name">Название препарата</label><input class="admin-input" id="drug-name" name="name" value="{{ form.get('name', '') }}" maxlength="200" required></div>
+    <button class="btn-main admin-submit" type="submit">Добавить препарат</button>
+  </form>
+  <p class="admin-hint">Удаление из справочника не меняет уже назначенные пациентам лекарства.</p>
+</section>
+
+<section class="panel admin-panel" aria-labelledby="drug-list-title">
+  <h2 class="panel__title" id="drug-list-title">Препараты в справочнике</h2>
+  {% if drugs %}
+  <div class="admin-table-wrap">
+    <table class="admin-table">
+      <thead><tr><th>Название</th><th>Действия</th></tr></thead>
+      <tbody>
+      {% for drug in drugs %}
+        <tr>
+          <td data-label="Название" colspan="2">
+            <form class="admin-inline-form" method="post" action="/admin/references/drugs/{{ drug.id }}">
+              <label class="visually-hidden" for="drug-name-{{ drug.id }}">Название препарата</label>
+              <input class="admin-input" id="drug-name-{{ drug.id }}" name="name" value="{{ drug.name }}" required>
+              <button class="btn-ghost admin-button" type="submit">Сохранить</button>
+            </form>
+            <form class="admin-delete-form" method="post" action="/admin/references/drugs/{{ drug.id }}/delete"><button class="admin-text-button" type="submit">Удалить препарат</button></form>
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}<p class="panel__empty">В справочнике пока нет препаратов.</p>{% endif %}
+</section>
+{% endif %}
+{% endblock %}

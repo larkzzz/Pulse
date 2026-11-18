@@ -1,9 +1,15 @@
-from datetime import date, timedelta
+from concurrent.futures import ThreadPoolExecutor
+from datetime import date, datetime, timedelta
+from threading import Barrier
 from types import SimpleNamespace
 
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session
+
+from app.models import InviteAttempt
 from app.services.accounts import oms_is_valid, validate_profile
 from app.services.intakes import day_summary, today_intakes, today_label
-from app.services.invites import check_code, normalize_code
+from app.services.invites import BLOCKED_MESSAGE, check_code, limited_code_status, normalize_code
 from app.services.security import hash_password, verify_password
 
 DOCTOR = SimpleNamespace(id=1, name="Сафин Ильдар Ринатович", role="врач-терапевт")
@@ -32,6 +38,28 @@ def test_check_code():
     )
     assert "не найден" in check_code("PLS-9999", None, None)
     assert "Введите код" in check_code("", None, None)
+
+
+def test_concurrent_invite_failures_use_one_shared_counter(tmp_path):
+    engine = create_engine(f"sqlite:///{tmp_path / 'attempts.db'}")
+    InviteAttempt.__table__.create(engine)
+    start = Barrier(8)
+
+    def check(i):
+        start.wait(timeout=5)
+        with Session(engine) as db:
+            return limited_code_status(
+                db, "неверный", ("shared-ip", f"session-{i}"), now=datetime(2026, 11, 18),
+            )[2]
+
+    try:
+        with ThreadPoolExecutor(max_workers=8) as workers:
+            errors = list(workers.map(check, range(8)))
+        assert errors.count(BLOCKED_MESSAGE) == 4
+        with Session(engine) as db:
+            assert db.get(InviteAttempt, "shared-ip").failures == 5
+    finally:
+        engine.dispose()
 
 
 def test_today_intakes_order_and_next():

@@ -1,4 +1,6 @@
 """Вход, выход и регистрация пациента."""
+import hmac
+import secrets
 from datetime import date, datetime
 
 from fastapi import APIRouter, Depends, Form, Request
@@ -8,9 +10,9 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.database import get_db
-from app.models import InviteCode, RegistrationRequest, User
+from app.models import RegistrationRequest, User
 from app.services.accounts import oms_is_valid, validate_profile
-from app.services.invites import check_code, normalize_code
+from app.services.invites import code_status, limited_code_status, normalize_code, transition_invite
 from app.services.security import hash_password, verify_password
 from app.web import htmx_redirect, templates
 
@@ -27,12 +29,18 @@ def _start_session(request: Request, user: User) -> None:
     request.session["user_id"] = user.id
 
 
-def _code_status(db: Session, raw: str):
-    code = normalize_code(raw)
-    invite = db.scalar(select(InviteCode).where(InviteCode.code == code)) if code else None
-    doctor = invite.doctor if invite else None
-    error = check_code(raw, invite, doctor)
-    return invite, doctor if not error else None, error
+def _code_status(request: Request, db: Session, raw: str):
+    if not raw.strip():
+        return code_status(db, raw)
+    session_id = request.session.get("invite_session_id")
+    if not session_id:
+        session_id = request.session["invite_session_id"] = secrets.token_urlsafe(24)
+    scopes = [f"ip:{request.client.host}"] if request.client else []
+    scopes.append(f"session:{session_id}")
+    keys = tuple(
+        hmac.digest(settings.secret_key.encode(), scope.encode(), "sha256").hex() for scope in scopes
+    )
+    return limited_code_status(db, raw, keys)
 
 
 @router.get("/login", response_class=HTMLResponse)
@@ -65,7 +73,7 @@ def login(
             request, "partials/login_form.html", _auth_context(form={"email": email}, errors=errors)
         )
     _start_session(request, user)
-    if user.status == "pending":
+    if user.status in ("pending", "rejected"):
         return htmx_redirect("/pending")
     return htmx_redirect(ROLE_HOME[user.role])
 
@@ -80,7 +88,7 @@ def logout(request: Request):
 def register_page(request: Request, code: str = "", db: Session = Depends(get_db)):
     ctx = _auth_context(mode="code", form={"code": normalize_code(code)})
     if code:
-        _, ctx["doctor"], ctx["code_error"] = _code_status(db, code)
+        _, ctx["doctor"], ctx["code_error"] = _code_status(request, db, code)
     return templates.TemplateResponse(request, "auth/register.html", ctx)
 
 
@@ -91,7 +99,7 @@ def register_no_code_page(request: Request):
 
 @router.post("/register/check-code", response_class=HTMLResponse)
 def check_code_on_input(request: Request, code: str = Form(""), db: Session = Depends(get_db)):
-    _, doctor, error = _code_status(db, code)
+    _, doctor, error = _code_status(request, db, code)
     return templates.TemplateResponse(
         request, "partials/code_status.html", {"doctor": doctor, "code_error": error if code.strip() else ""}
     )
@@ -124,7 +132,7 @@ def register(
 
     invite = doctor = None
     if mode == "code":
-        invite, doctor, code_error = _code_status(db, code)
+        invite, doctor, code_error = _code_status(request, db, code)
         if code_error:
             errors["code"] = code_error
     elif not oms_is_valid(form["oms"]):
@@ -149,11 +157,21 @@ def register(
         db.add(RegistrationRequest(patient=user, oms=form["oms"], submitted_at=datetime.now()))
     else:
         db.flush()
-        invite.status = "used"
-        invite.patient_hint = " ".join(
+        patient_hint = " ".join(
             x for x in (form["last_name"], form["first_name"], form["patronymic"]) if x
         )
-        invite.used_by = user
+        if not transition_invite(
+            db, invite.id, "used", used_by_id=user.id, patient_hint=patient_hint[:200],
+        ):
+            db.rollback()
+            _, doctor, error = code_status(db, code)
+            return templates.TemplateResponse(
+                request, "partials/register_form.html",
+                _auth_context(
+                    mode=mode, form=form, doctor=doctor,
+                    errors={"code": error or "Код больше не действует. Попросите новый код в регистратуре"},
+                ),
+            )
     db.commit()
     _start_session(request, user)
     if mode == "request":
@@ -162,5 +180,11 @@ def register(
 
 
 @router.get("/pending", response_class=HTMLResponse)
-def pending_page(request: Request):
-    return templates.TemplateResponse(request, "auth/pending.html", _auth_context())
+def pending_page(request: Request, db: Session = Depends(get_db)):
+    user = db.get(User, request.session.get("user_id", 0))
+    if user and user.role == "patient" and user.status == "active":
+        return RedirectResponse("/", status_code=303)
+    registration = user.registration_request if user else None
+    return templates.TemplateResponse(
+        request, "auth/pending.html", _auth_context(registration=registration)
+    )

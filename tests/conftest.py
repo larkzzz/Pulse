@@ -28,3 +28,12 @@ def patient_client(client):
     )
     assert response.headers["HX-Redirect"] == "/"
     return client
+
+
+@pytest.fixture
+def admin_client(client):
+    response = client.post(
+        "/login", data={"email": "admin@pestrechi-crb.ru", "password": DEMO_PASSWORD}
+    )
+    assert response.headers["HX-Redirect"] == "/admin"
+    return client

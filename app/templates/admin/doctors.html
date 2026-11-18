@@ -1,0 +1,51 @@
+{% extends "admin/layout.html" %}
+{% block title %}Врачи · Пульс{% endblock %}
+
+{% block admin_content %}
+<div class="admin-page-head">
+  <div>
+    <h1>Врачи</h1>
+    <p>Создавайте учётные записи и временно закрывайте доступ к кабинету врача.</p>
+  </div>
+</div>
+
+<section class="panel admin-panel" aria-labelledby="doctor-create-title">
+  <h2 class="panel__title" id="doctor-create-title">Добавить врача</h2>
+  <form class="admin-form admin-form--doctor" method="post" action="/admin/doctors">
+    <div class="field"><label for="doctor-last-name">Фамилия</label><input class="admin-input" id="doctor-last-name" name="last_name" value="{{ form.get('last_name', '') }}" required></div>
+    <div class="field"><label for="doctor-first-name">Имя</label><input class="admin-input" id="doctor-first-name" name="first_name" value="{{ form.get('first_name', '') }}" required></div>
+    <div class="field"><label for="doctor-patronymic">Отчество</label><input class="admin-input" id="doctor-patronymic" name="patronymic" value="{{ form.get('patronymic', '') }}"></div>
+    <div class="field"><label for="doctor-specialty">Специальность</label><input class="admin-input" id="doctor-specialty" name="specialty" value="{{ form.get('specialty', '') }}" placeholder="врач-терапевт" required></div>
+    <div class="field"><label for="doctor-email">Почта для входа</label><input class="admin-input" id="doctor-email" type="email" name="email" value="{{ form.get('email', '') }}" required></div>
+    <div class="field"><label for="doctor-password">Временный пароль</label><input class="admin-input" id="doctor-password" type="password" name="password" minlength="8" autocomplete="new-password" required><small>Не короче 8 знаков. Передайте пароль врачу лично.</small></div>
+    <button class="btn-main admin-submit" type="submit">Создать учётную запись</button>
+  </form>
+</section>
+
+<section class="panel admin-panel" aria-labelledby="doctor-list-title">
+  <h2 class="panel__title" id="doctor-list-title">Учётные записи врачей</h2>
+  <div class="admin-table-wrap">
+    <table class="admin-table">
+      <thead><tr><th>Врач</th><th>Почта</th><th>Пациентов</th><th>Доступ</th><th>Действие</th></tr></thead>
+      <tbody>
+      {% for row in doctor_rows %}
+        <tr>
+          <td data-label="Врач"><strong>{{ row.doctor.name }}</strong><span class="admin-cell-note">{{ row.doctor.role }}</span></td>
+          <td data-label="Почта">{{ row.doctor.account.email if row.doctor.account else 'Не привязана' }}</td>
+          <td data-label="Пациентов">{{ row.patient_count }}</td>
+          <td data-label="Доступ">{% if row.doctor.account and row.doctor.account.status == 'active' %}<span class="admin-status admin-status--new">Активна</span>{% else %}<span class="admin-status admin-status--revoked">Заблокирована</span>{% endif %}</td>
+          <td data-label="Действие">
+            {% if row.doctor.account %}
+            <form method="post" action="/admin/doctors/{{ row.doctor.id }}/status">
+              <input type="hidden" name="status" value="{{ 'blocked' if row.doctor.account.status == 'active' else 'active' }}">
+              <button class="btn-ghost admin-button" type="submit">{{ 'Заблокировать' if row.doctor.account.status == 'active' else 'Разблокировать' }}</button>
+            </form>
+            {% else %}—{% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

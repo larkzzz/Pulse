@@ -1,6 +1,12 @@
-import pytest
+from datetime import datetime, timedelta
 
+import pytest
+from fastapi.testclient import TestClient
+
+from app.main import app
+from app.routers import auth
 from app.services.demo import DEMO_PASSWORD
+from app.services.invites import limited_code_status
 
 
 @pytest.mark.parametrize("url", [
@@ -83,12 +89,77 @@ def test_register_by_code_assigns_doctor(client):
     assert "уже зарегистрировались" in response.text
 
 
+def test_invite_block_applies_to_all_code_checks_but_not_no_code_request(client):
+    bad, good = "PLS-9999", "PLS-4827"
+    message = "Слишком много неверных попыток"
+    for _ in range(2):
+        assert "Код не найден" in client.get("/register", params={"code": bad}).text
+        assert "Код не найден" in client.post("/register/check-code", data={"code": bad}).text
+    assert message in client.post("/register", data=_profile(code=bad)).text
+    for response in (
+        client.get("/register", params={"code": good}),
+        client.post("/register/check-code", data={"code": good}),
+        client.post("/register", data=_profile(code=good)),
+    ):
+        assert message in response.text
+        assert "Ваш врач:" not in response.text
+        assert "HX-Redirect" not in response.headers
+
+    response = client.post("/register", data=_profile(mode="request", oms="1655 1111 2222 3333"))
+    assert response.headers["HX-Redirect"] == "/pending"
+
+
+def test_invite_block_is_shared_by_ip_and_stays_with_session(client):
+    for _ in range(5):
+        client.post("/register/check-code", data={"code": "PLS-9999"})
+    message = "Слишком много неверных попыток"
+    with_cookies = dict(client.cookies)
+    with TestClient(app, client=("192.0.2.3", 50000), cookies=with_cookies) as other_address:
+        assert message in other_address.get("/register", params={"code": "PLS-4827"}).text
+    client.cookies.clear()
+    assert message in client.get("/register", params={"code": "PLS-4827"}).text
+
+
+def test_invite_block_expires_without_extending_on_blocked_requests(client, monkeypatch):
+    now = datetime(2026, 11, 18, 12)
+
+    def check(db, raw, keys):
+        return limited_code_status(db, raw, keys, now=now)
+
+    monkeypatch.setattr(auth, "limited_code_status", check)
+    for _ in range(5):
+        client.post("/register/check-code", data={"code": "PLS-9999"})
+
+    now += timedelta(minutes=14)
+    assert "Слишком много неверных попыток" in client.get("/register?code=PLS-4827").text
+    now += timedelta(minutes=1)
+    response = client.post("/register", data=_profile(code="PLS-4827"))
+    assert response.headers["HX-Redirect"] == "/cabinet?welcome=1"
+
+
+def test_invite_valid_check_resets_streak_and_blank_does_not_count(client):
+    for _ in range(5):
+        assert "Слишком много неверных попыток" not in client.post("/register/check-code").text
+    for _ in range(2):
+        for _ in range(4):
+            assert "Код не найден" in client.post("/register/check-code", data={"code": "PLS-9999"}).text
+        assert "Ваш врач:" in client.post("/register/check-code", data={"code": "PLS-4827"}).text
+
+
 def test_register_request_without_code(client):
     response = client.post("/register", data=_profile(mode="request", oms="123"))
     assert "16 цифр" in response.text
     response = client.post("/register", data=_profile(mode="request", oms="1655 1111 2222 3333"))
     assert response.headers["HX-Redirect"] == "/pending"
     assert client.get("/", follow_redirects=False).status_code == 303
+
+
+def test_pending_keeps_emergency_contacts_without_broken_help_link(client):
+    response = client.get("/pending")
+    assert 'href="tel:112"' in response.text
+    assert "Позвонить в регистратуру" in response.text
+    assert "Адрес ближайшего ФАП можно узнать в регистратуре" in response.text
+    assert 'href="/help"' not in response.text
 
 
 def test_profile_email_is_used_for_login(patient_client):

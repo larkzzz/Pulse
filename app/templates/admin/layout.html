@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block body_class %}admin{% endblock %}
+{% block main_class %}admin-main{% endblock %}
+
+{% block header %}
+<header class="admin-header">
+  <div class="admin-header__inner">
+    <a class="brand" href="/admin" aria-label="Пульс — кабинет администратора">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12h4l2.5-6 4 12 2.5-6h6"/></svg>
+      Пульс
+    </a>
+    <span class="admin-header__role">Кабинет администратора</span>
+    <a class="admin-logout" href="/logout">Выйти</a>
+  </div>
+</header>
+{% endblock %}
+
+{% block content %}
+<div class="admin-layout">
+  <nav class="admin-nav" aria-label="Разделы кабинета">
+    {% set sections = [
+      ('requests', '/admin/requests', 'Заявки'),
+      ('invites', '/admin/invites', 'Коды приглашения'),
+      ('patients', '/admin/patients', 'Пациенты'),
+      ('doctors', '/admin/doctors', 'Врачи'),
+      ('references', '/admin/references/faps', 'Справочники'),
+    ] %}
+    {% for section, url, label in sections %}
+    <a class="admin-nav__link{% if active_section == section %} is-active{% endif %}" href="{{ url }}"
+       {% if active_section == section %}aria-current="{{ 'true' if section == 'references' else 'page' }}"{% endif %}>{{ label }}</a>
+    {% endfor %}
+  </nav>
+
+  <div class="admin-content">
+    {% if notice %}<div class="admin-notice" role="status">{{ notice }}</div>{% endif %}
+    {% if error %}<div class="form-alert admin-error" role="alert">{{ error }}</div>{% endif %}
+    {% block admin_content %}{% endblock %}
+  </div>
+</div>
+{% endblock %}

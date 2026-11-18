@@ -3,7 +3,7 @@ from datetime import date, datetime, time, timedelta
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.models import Doctor, Intake, InviteCode, Medication, RegistrationRequest, User
+from app.models import Doctor, Drug, Fap, Intake, InviteCode, Medication, RegistrationRequest, User
 from app.services.security import hash_password
 
 DEMO_PASSWORD = "demo1234"
@@ -11,11 +11,24 @@ DEMO_PASSWORD = "demo1234"
 
 def seed_demo_data(db: Session) -> None:
     if db.scalar(select(User.id).limit(1)):
+        _upgrade_demo_data(db)
         return
 
-    safin = Doctor(name="Сафин Ильдар Ринатович", role="врач-терапевт")
-    garipova = Doctor(name="Гарипова Алсу Маратовна", role="врач-кардиолог")
-    db.add_all([safin, garipova])
+    safin_account = User(
+        email="safin@pestrechi-crb.ru", password_hash=hash_password(DEMO_PASSWORD),
+        role="doctor", last_name="Сафин", first_name="Ильдар", patronymic="Ринатович",
+    )
+    garipova_account = User(
+        email="garipova@pestrechi-crb.ru", password_hash=hash_password(DEMO_PASSWORD),
+        role="doctor", last_name="Гарипова", first_name="Алсу", patronymic="Маратовна",
+    )
+    safin = Doctor(
+        account=safin_account, name="Сафин Ильдар Ринатович", role="врач-терапевт"
+    )
+    garipova = Doctor(
+        account=garipova_account, name="Гарипова Алсу Маратовна", role="врач-кардиолог"
+    )
+    db.add_all([safin_account, garipova_account, safin, garipova])
     db.flush()
 
     galina = User(
@@ -44,7 +57,6 @@ def seed_demo_data(db: Session) -> None:
     db.add_all([
         galina,
         petrov,
-        User(email="safin@pestrechi-crb.ru", password_hash=hash_password(DEMO_PASSWORD), role="doctor"),
         User(email="admin@pestrechi-crb.ru", password_hash=hash_password(DEMO_PASSWORD), role="admin"),
     ])
     db.flush()
@@ -94,4 +106,54 @@ def seed_demo_data(db: Session) -> None:
         medication=enalapril, intake_date=today, time="08:00",
         taken_at=datetime.combine(today, time(8, 5)),
     ))
+    _seed_references(db)
+    db.commit()
+
+
+def _seed_references(db: Session) -> None:
+    if not db.scalar(select(Drug.id).limit(1)):
+        db.add_all(Drug(name=name) for name in (
+            "Амлодипин", "Аторвастатин", "Ацетилсалициловая кислота",
+            "Бисопролол", "Варфарин", "Лозартан", "Метформин", "Омепразол", "Эналаприл",
+        ))
+    if not db.scalar(select(Fap.id).limit(1)):
+        db.add_all([
+            Fap(
+                name="ФАП села Пестречи", village="Пестречи",
+                address="ул. Садовая, д. 18", phone="8 800 000-00-01",
+                latitude=55.7500, longitude=49.6500,
+            ),
+            Fap(
+                name="ФАП деревни Карадуган", village="Карадуган",
+                address="ул. Центральная, д. 4", phone="8 800 000-00-02",
+                latitude=55.6800, longitude=49.7200,
+            ),
+        ])
+
+
+def _upgrade_demo_data(db: Session) -> None:
+    accounts = (
+        (
+            "Сафин Ильдар Ринатович", "safin@pestrechi-crb.ru",
+            ("Сафин", "Ильдар", "Ринатович"),
+        ),
+        (
+            "Гарипова Алсу Маратовна", "garipova@pestrechi-crb.ru",
+            ("Гарипова", "Алсу", "Маратовна"),
+        ),
+    )
+    for doctor_name, email, names in accounts:
+        doctor = db.scalar(select(Doctor).where(Doctor.name == doctor_name))
+        account = db.scalar(select(User).where(User.email == email))
+        if doctor and not account:
+            account = User(
+                email=email, password_hash=hash_password(DEMO_PASSWORD), role="doctor"
+            )
+            db.add(account)
+            db.flush()
+        if doctor and account:
+            if not doctor.account:
+                doctor.account = account
+            account.last_name, account.first_name, account.patronymic = names
+    _seed_references(db)
     db.commit()

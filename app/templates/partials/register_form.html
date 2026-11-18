@@ -11,7 +11,7 @@
     <label for="code">Код из листка выписки</label>
     <input id="code" name="code" value="{{ form.get('code', '') }}" placeholder="PLS-0000"
            autocomplete="off" autocapitalize="characters" spellcheck="false"
-           hx-post="/register/check-code" hx-trigger="input changed delay:500ms, change"
+           hx-post="/register/check-code" hx-trigger="change changed"
            hx-target="#code-status" hx-sync="this:replace"
            aria-describedby="code-status"
            {% if errors.get('code') %}aria-invalid="true"{% endif %}>
