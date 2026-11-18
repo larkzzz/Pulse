@@ -3,7 +3,7 @@ from datetime import date, datetime, time, timedelta
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.models import Doctor, Drug, Fap, Intake, InviteCode, Medication, RegistrationRequest, User
+from app.models import Doctor, Drug, Intake, InviteCode, Medication, RegistrationRequest, User
 from app.services.security import hash_password
 
 DEMO_PASSWORD = "demo1234"
@@ -116,19 +116,6 @@ def _seed_references(db: Session) -> None:
             "Амлодипин", "Аторвастатин", "Ацетилсалициловая кислота",
             "Бисопролол", "Варфарин", "Лозартан", "Метформин", "Омепразол", "Эналаприл",
         ))
-    if not db.scalar(select(Fap.id).limit(1)):
-        db.add_all([
-            Fap(
-                name="ФАП села Пестречи", village="Пестречи",
-                address="ул. Садовая, д. 18", phone="8 800 000-00-01",
-                latitude=55.7500, longitude=49.6500,
-            ),
-            Fap(
-                name="ФАП деревни Карадуган", village="Карадуган",
-                address="ул. Центральная, д. 4", phone="8 800 000-00-02",
-                latitude=55.6800, longitude=49.7200,
-            ),
-        ])
 
 
 def _upgrade_demo_data(db: Session) -> None:

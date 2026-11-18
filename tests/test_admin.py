@@ -311,7 +311,7 @@ def test_fap_create_update_delete(admin_client):
         assert db.get(Fap, fap_id) is None
 
 
-def test_fap_validates_required_fields_and_coordinates(admin_client):
+def test_fap_validates_required_fields_phone_and_coordinates(admin_client, fap_directory):
     valid = {"name": "Название ФАП", "village": "Посёлок", "address": "ул. Тестовая, 1"}
     for change, message in (
         ({"address": ""}, "Заполните название, населённый пункт и адрес"),
@@ -319,9 +319,41 @@ def test_fap_validates_required_fields_and_coordinates(admin_client):
         ({"latitude": "91", "longitude": "49"}, "Широта должна быть от -90 до 90"),
         ({"latitude": "55", "longitude": "181"}, "Долгота должна быть от -180 до 180"),
         ({"latitude": "55"}, "Укажите и широту, и долготу"),
+        ({"latitude": "0", "longitude": "0"}, "Нулевые координаты не подходят"),
+        ({"phone": "123"}, "Укажите полный рабочий телефон"),
+        ({"phone": "8 800 000-00-01"}, "Укажите полный рабочий телефон"),
     ):
-        for url in ("/admin/references/faps", "/admin/references/faps/1"):
+        for url in ("/admin/references/faps", f"/admin/references/faps/{fap_directory[0].id}"):
             assert message in admin_client.post(url, data={**valid, **change}).text
+
+
+def test_replacing_legacy_demo_fap_requires_new_address_and_coordinates(admin_client):
+    legacy = Fap(name="ФАП села Пестречи", village="Пестречи", address="ул. Садовая, д. 18",
+                 phone="8 800 000-00-01", latitude=55.75, longitude=49.65)
+    with SessionLocal.begin() as db:
+        db.add(legacy)
+
+    url = f"/admin/references/faps/{legacy.id}"
+    replacement = {
+        "name": "Переименованный ФАП", "village": "Пестречи", "address": "ул. Исправленная, 1",
+        "latitude": "55.76", "longitude": "49.66", "phone": "",
+    }
+    for partial in (
+        {"address": legacy.address},
+        {"latitude": legacy.latitude, "longitude": legacy.longitude, "village": "Другой посёлок"},
+        {"latitude": "", "longitude": ""},
+    ):
+        rejected = admin_client.post(url, data={**replacement, **partial})
+        assert "Укажите проверенный адрес и координаты входа в ФАП вместо демо-данных" in rejected.text
+        with SessionLocal.begin() as db:
+            assert db.get(Fap, legacy.id).address == legacy.address
+
+    saved = admin_client.post(url, data=replacement)
+    assert "Данные ФАП сохранены" in saved.text
+    admin_client.post("/login", data={"email": "galina.smirnova@mail.ru", "password": DEMO_PASSWORD})
+    page = admin_client.get("/help", params={"fap_id": legacy.id})
+    assert "ул. Исправленная, 1" in page.text
+    assert "rtext=~55.76%2C49.66" in page.text
 
 
 def test_migrate_existing_database_adds_doctor_account_link(tmp_path):

@@ -15,20 +15,16 @@
 <p>Чтобы проверить решение, обновите эту страницу.</p>
 {% endif %}
 
-<a class="btn-second btn-link-like" href="tel:{{ registry_phone | replace(' ', '') | replace('-', '') }}">
-  <span class="call-reg">
-    <span>Позвонить в регистратуру</span>
-    <span class="call-reg__num">{{ registry_phone }}</span>
-  </span>
-</a>
+{% if registry_href %}{% include "partials/help_registry.html" %}{% endif %}
 
 <section class="urgent" aria-labelledby="urgent-title">
   <h2 class="urgent__title" id="urgent-title">Если стало плохо, не ждите</h2>
-  <a class="btn-sos" href="tel:112">
-    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg>
-    Позвонить 112
-  </a>
+  {% include "partials/help_sos.html" %}
+  {% if help_available %}
+  <a class="btn-ghost btn-link-like urgent__note" href="/help">Помощь и ближайший ФАП</a>
+  {% elif registry_href %}
   <p class="urgent__note">Адрес ближайшего ФАП можно узнать в регистратуре.</p>
+  {% endif %}
 </section>
 
 <div class="auth-switch">

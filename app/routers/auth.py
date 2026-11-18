@@ -12,6 +12,7 @@ from app.config import settings
 from app.database import get_db
 from app.models import RegistrationRequest, User
 from app.services.accounts import oms_is_valid, validate_profile
+from app.services.help import phone_href
 from app.services.invites import code_status, limited_code_status, normalize_code, transition_invite
 from app.services.security import hash_password, verify_password
 from app.web import htmx_redirect, templates
@@ -21,7 +22,7 @@ ROLE_HOME = {"patient": "/", "doctor": "/doctor", "admin": "/admin"}
 
 
 def _auth_context(**extra) -> dict:
-    return {"form": {}, "errors": {}, "registry_phone": settings.registry_phone, **extra}
+    return {"form": {}, "errors": {}, **extra}
 
 
 def _start_session(request: Request, user: User) -> None:
@@ -186,5 +187,10 @@ def pending_page(request: Request, db: Session = Depends(get_db)):
         return RedirectResponse("/", status_code=303)
     registration = user.registration_request if user else None
     return templates.TemplateResponse(
-        request, "auth/pending.html", _auth_context(registration=registration)
+        request, "auth/pending.html", _auth_context(
+            registration=registration,
+            help_available=bool(user and user.role == "patient" and user.status in ("pending", "rejected")),
+            registry_phone=settings.registry_phone,
+            registry_href=phone_href(settings.registry_phone),
+        ),
     )

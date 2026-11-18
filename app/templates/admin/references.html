@@ -17,13 +17,14 @@
 {% if reference_kind == 'faps' %}
 <section class="panel admin-panel" aria-labelledby="fap-create-title">
   <h2 class="panel__title" id="fap-create-title">Добавить ФАП</h2>
+  <p class="panel__hint">Сверьте адрес и телефон с данными больницы. Для маршрута укажите координаты входа в медпункт.</p>
   <form class="admin-form admin-form--fap" method="post" action="/admin/references/faps">
-    <div class="field"><label for="fap-name">Название</label><input class="admin-input" id="fap-name" name="name" value="{{ form.get('name', '') }}" placeholder="ФАП села Пестречи" required></div>
+    <div class="field"><label for="fap-name">Название</label><input class="admin-input" id="fap-name" name="name" value="{{ form.get('name', '') }}" required></div>
     <div class="field"><label for="fap-village">Населённый пункт</label><input class="admin-input" id="fap-village" name="village" value="{{ form.get('village', '') }}" required></div>
     <div class="field admin-form__wide"><label for="fap-address">Адрес</label><input class="admin-input" id="fap-address" name="address" value="{{ form.get('address', '') }}" required></div>
-    <div class="field"><label for="fap-phone">Телефон</label><input class="admin-input" id="fap-phone" name="phone" value="{{ form.get('phone', '') }}"></div>
-    <div class="field"><label for="fap-latitude">Широта</label><input class="admin-input" id="fap-latitude" name="latitude" value="{{ form.get('latitude', '') }}" placeholder="55.751244"></div>
-    <div class="field"><label for="fap-longitude">Долгота</label><input class="admin-input" id="fap-longitude" name="longitude" value="{{ form.get('longitude', '') }}" placeholder="37.618423"></div>
+    <div class="field"><label for="fap-phone">Телефон</label><input class="admin-input" id="fap-phone" name="phone" type="tel" value="{{ form.get('phone', '') }}"></div>
+    <div class="field"><label for="fap-latitude">Широта</label><input class="admin-input" id="fap-latitude" name="latitude" value="{{ form.get('latitude', '') }}"></div>
+    <div class="field"><label for="fap-longitude">Долгота</label><input class="admin-input" id="fap-longitude" name="longitude" value="{{ form.get('longitude', '') }}"></div>
     <button class="btn-main admin-submit" type="submit">Добавить ФАП</button>
   </form>
 </section>
@@ -35,7 +36,7 @@
       <div class="field"><label for="fap-name-{{ fap.id }}">Название</label><input class="admin-input" id="fap-name-{{ fap.id }}" name="name" value="{{ fap.name }}" required></div>
       <div class="field"><label for="fap-village-{{ fap.id }}">Населённый пункт</label><input class="admin-input" id="fap-village-{{ fap.id }}" name="village" value="{{ fap.village }}" required></div>
       <div class="field admin-form__wide"><label for="fap-address-{{ fap.id }}">Адрес</label><input class="admin-input" id="fap-address-{{ fap.id }}" name="address" value="{{ fap.address }}" required></div>
-      <div class="field"><label for="fap-phone-{{ fap.id }}">Телефон</label><input class="admin-input" id="fap-phone-{{ fap.id }}" name="phone" value="{{ fap.phone }}"></div>
+      <div class="field"><label for="fap-phone-{{ fap.id }}">Телефон</label><input class="admin-input" id="fap-phone-{{ fap.id }}" name="phone" type="tel" value="{{ fap.phone }}"></div>
       <div class="field"><label for="fap-latitude-{{ fap.id }}">Широта</label><input class="admin-input" id="fap-latitude-{{ fap.id }}" name="latitude" value="{{ fap.latitude if fap.latitude is not none else '' }}"></div>
       <div class="field"><label for="fap-longitude-{{ fap.id }}">Долгота</label><input class="admin-input" id="fap-longitude-{{ fap.id }}" name="longitude" value="{{ fap.longitude if fap.longitude is not none else '' }}"></div>
       <div class="admin-form__actions"><button class="btn-ghost admin-button" type="submit">Сохранить изменения</button></div>

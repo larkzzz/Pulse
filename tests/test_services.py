@@ -2,12 +2,14 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import date, datetime, timedelta
 from threading import Barrier
 from types import SimpleNamespace
+from urllib.parse import parse_qs, urlparse
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
-from app.models import InviteAttempt
+from app.models import Fap, InviteAttempt
 from app.services.accounts import oms_is_valid, validate_profile
+from app.services.help import fap_map_link, nearest_fap, phone_href
 from app.services.intakes import day_summary, today_intakes, today_label
 from app.services.invites import BLOCKED_MESSAGE, check_code, limited_code_status, normalize_code
 from app.services.security import hash_password, verify_password
@@ -81,6 +83,34 @@ def test_day_summary_empty():
 
 def test_today_label():
     assert today_label(date(2026, 11, 8)) == "8 ноября, воскресенье"
+
+
+def test_nearest_fap_uses_distance_and_ignores_incomplete_locations():
+    no_point = Fap(latitude=0, longitude=None)
+    invalid = Fap(latitude=float("nan"), longitude=0)
+    far = Fap(latitude=0, longitude=5)
+    near = Fap(latitude=0, longitude=-179.5)
+    assert nearest_fap([no_point, invalid, far, near], 0, 179.5) is near
+    assert nearest_fap([no_point, invalid], 0, 0) is None
+    assert nearest_fap([far], 91, 0) is None
+    assert nearest_fap([far], 0, float("inf")) is None
+    assert nearest_fap([far], 0, 0) is None
+    assert nearest_fap([Fap(latitude=0, longitude=0)], 0, 0.1) is None
+
+
+def test_help_links_format_phone_and_route_without_patient_coordinates():
+    assert phone_href("+7 (84367) 3-12-34") == "tel:+78436731234"
+    assert phone_href("8 (84367) 3-12-34") == "tel:88436731234"
+    assert phone_href("не указан") == ""
+    assert phone_href("112") == ""
+    assert phone_href("8 800 000-00-00") == ""
+    assert phone_href("+7 800 000-00-02") == ""
+    fap = Fap(village="Посёлок", address="ул. Тестовая, 18", latitude=55.76, longitude=49.66)
+    assert parse_qs(urlparse(fap_map_link(fap)).query) == {
+        "mode": ["routes"], "rtext": ["~55.76,49.66"], "rtt": ["auto"],
+    }
+    fap.longitude = None
+    assert parse_qs(urlparse(fap_map_link(fap)).query) == {"text": ["Посёлок, ул. Тестовая, 18"]}
 
 
 def test_validate_profile():

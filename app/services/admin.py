@@ -8,6 +8,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.models import Doctor, Drug, Fap, InviteCode, RegistrationRequest, User
+from app.services.help import has_demo_fap_data, is_demo_fap, phone_href
 from app.services.invites import invite_status, transition_invite
 from app.services.security import hash_password
 
@@ -253,6 +254,8 @@ def _fap_data(
     phone: str,
     latitude: str,
     longitude: str,
+    *,
+    replacing_demo: bool = False,
 ) -> dict:
     data = {
         "name": name.strip(),
@@ -266,6 +269,8 @@ def _fap_data(
         ("name", 200), ("village", 150), ("address", 300), ("phone", 40),
     )):
         raise AdminError("Сократите название, населённый пункт, адрес или телефон ФАП")
+    if data["phone"] and not phone_href(data["phone"]):
+        raise AdminError("Укажите полный рабочий телефон с +7 или 8 либо оставьте поле пустым")
     try:
         data["latitude"] = float(latitude.replace(",", ".")) if latitude.strip() else None
         data["longitude"] = float(longitude.replace(",", ".")) if longitude.strip() else None
@@ -277,6 +282,12 @@ def _fap_data(
         raise AdminError("Долгота должна быть от -180 до 180")
     if (data["latitude"] is None) != (data["longitude"] is None):
         raise AdminError("Укажите и широту, и долготу или оставьте оба поля пустыми")
+    if (data["latitude"], data["longitude"]) == (0, 0):
+        raise AdminError("Нулевые координаты не подходят. Укажите точку входа в ФАП или оставьте поля пустыми")
+    if (replacing_demo and data["latitude"] is None) or has_demo_fap_data(
+        data["village"], data["address"], data["latitude"], data["longitude"],
+    ):
+        raise AdminError("Укажите проверенный адрес и координаты входа в ФАП вместо демо-данных")
     return data
 
 
@@ -308,7 +319,8 @@ def update_fap(
     fap = db.get(Fap, fap_id)
     if not fap:
         raise AdminError("ФАП не найден")
-    for key, value in _fap_data(name, village, address, phone, latitude, longitude).items():
+    data = _fap_data(name, village, address, phone, latitude, longitude, replacing_demo=is_demo_fap(fap))
+    for key, value in data.items():
         setattr(fap, key, value)
     db.commit()
     return fap

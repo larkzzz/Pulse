@@ -10,7 +10,7 @@
 </div>
 
 {% if requests %}
-<div class="admin-request-list">
+<section class="admin-request-list" aria-label="Список заявок">
   {% for registration in requests %}
   <article class="panel admin-request">
     <div class="admin-request__head">
@@ -54,7 +54,8 @@
     {% endif %}
   </article>
   {% endfor %}
-</div>
+  <p class="admin-request-list__summary">Всего заявок: {{ requests | length }}</p>
+</section>
 {% else %}
 <section class="panel admin-panel"><p class="panel__empty">Заявок пока нет.</p></section>
 {% endif %}

@@ -1,0 +1,24 @@
+{% if fap %}
+<div class="help-fap" data-fap-id="{{ fap.id }}">
+  {% if is_nearest %}<p class="help-fap__label">Ближайший по прямой</p>{% endif %}
+  <h3 class="help-fap__name">{{ fap.name }}</h3>
+  <p>{{ fap.village }}, {{ fap.address }}</p>
+  {% if fap_phone_href %}
+  <a class="btn-ghost btn-link-like" href="{{ fap_phone_href }}">Позвонить в ФАП: {{ fap.phone }}</a>
+  {% endif %}
+  <a class="btn-second btn-link-like" href="{{ fap_map_link }}" target="_blank" rel="noopener noreferrer">
+    {{ 'Построить маршрут в Яндекс Картах' if fap_point else 'Найти адрес в Яндекс Картах' }}
+  </a>
+  {% if fap_point %}
+  <p class="help-status">В Яндекс Картах укажите, откуда поедете.</p>
+  {% endif %}
+  {% if maps_enabled and fap_point %}
+  <button type="button" class="btn-ghost" data-show-map aria-expanded="false" aria-controls="help-map" hidden>Показать карту</button>
+  <p class="help-status" data-map-status role="status"></p>
+  <div class="help-map" id="help-map" data-map data-latitude="{{ fap_point[0] }}" data-longitude="{{ fap_point[1] }}"
+       role="region" aria-label="Карта медпункта" hidden></div>
+  {% endif %}
+</div>
+{% elif fap_message %}
+<p class="help-fap">{{ fap_message }}</p>
+{% endif %}

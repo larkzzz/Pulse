@@ -26,7 +26,7 @@ class Settings:
     database_url: str = _env("DATABASE_URL", "sqlite:///./pulse.db")
 
     # Данные больницы
-    registry_phone: str = _env("REGISTRY_PHONE", "8 800 000-00-00")
+    registry_phone: str = _env("REGISTRY_PHONE")
 
     # Yandex Cloud: YandexGPT (ИИ-помощник) и SpeechKit (озвучка напоминаний)
     yandex_folder_id: str = _env("YANDEX_FOLDER_ID")

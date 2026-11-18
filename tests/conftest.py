@@ -8,6 +8,7 @@ from fastapi.testclient import TestClient
 
 from app.database import Base, SessionLocal, engine
 from app.main import app
+from app.models import Fap
 from app.services.demo import DEMO_PASSWORD, seed_demo_data
 
 
@@ -37,3 +38,16 @@ def admin_client(client):
     )
     assert response.headers["HX-Redirect"] == "/admin"
     return client
+
+
+@pytest.fixture
+def fap_directory(client):
+    faps = (
+        Fap(name="ФАП Северный", village="Северный", address="ул. Тестовая, 1",
+            phone="+7 (84367) 3-12-34", latitude=55.76, longitude=49.66),
+        Fap(name="ФАП Южный", village="Южный", address="ул. Тестовая, 2",
+            latitude=55.69, longitude=49.73),
+    )
+    with SessionLocal.begin() as db:
+        db.add_all(faps)
+    return faps

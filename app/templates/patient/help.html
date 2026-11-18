@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}Помощь · Пульс{% endblock %}
+{% block body_class %}patient{% endblock %}
+{% block main_class %}patient-main{% if not active_patient %} help-main--limited{% endif %}{% endblock %}
+
+{% block header %}
+  {% if active_patient %}{% include "partials/patient_header.html" %}{% endif %}
+{% endblock %}
+
+{% block content %}
+{% if not active_patient %}
+<a class="btn-ghost btn-link-like help-back" href="/pending">Назад к заявке</a>
+{% endif %}
+<div class="page-head">
+  <h1 class="page-head__title">Помощь</h1>
+</div>
+
+<div class="help-grid">
+  <div class="help-contacts">
+    <section class="urgent help-urgent" aria-labelledby="help-urgent-title">
+      <h2 class="urgent__title" id="help-urgent-title">Если нужна срочная помощь</h2>
+      {% include "partials/help_sos.html" %}
+    </section>
+    <section class="panel help-panel" aria-labelledby="help-registry-title">
+      <h2 class="panel__title" id="help-registry-title">Регистратура</h2>
+      {% if registry_href %}
+      <p>{{ 'Регистратура поможет связаться с вашим врачом.' if active_patient else 'Здесь можно уточнить адрес медпункта или задать вопрос о заявке.' }}</p>
+      {% include "partials/help_registry.html" %}
+      {% else %}
+      <p class="panel__empty">Номер регистратуры пока не указан.</p>
+      {% endif %}
+    </section>
+  </div>
+
+  <section class="panel help-panel" id="help-faps" aria-labelledby="help-faps-title"
+           data-maps-key="{{ maps_api_key }}">
+    <h2 class="panel__title" id="help-faps-title">Ближайший медпункт (ФАП)</h2>
+    {% if faps %}
+    <p>Найдите медпункт рядом с вами или выберите его из списка.</p>
+    {% if has_mapped_faps %}
+    <button type="button" class="btn-second" id="help-locate"
+            data-url="{{ url_for('find_nearest_fap').path }}" hidden>Найти ближайший ФАП</button>
+    {% endif %}
+    <p class="help-status" id="help-location-status" role="status"></p>
+    <form class="help-choice" action="/help#help-fap-result" method="get">
+      <label for="help-fap-select">Выбрать медпункт вручную</label>
+      <select class="form-select" id="help-fap-select" name="fap_id" required>
+        <option value="">Выберите из списка</option>
+        {% for item in faps %}
+        <option value="{{ item.id }}"{% if fap and fap.id == item.id %} selected{% endif %}>{{ item.village }} — {{ item.name }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="btn-ghost">Показать адрес</button>
+    </form>
+    <div id="help-fap-result" aria-live="polite">
+      {% include "partials/help_fap.html" %}
+    </div>
+    {% else %}
+    <p class="panel__empty">Медпункты пока не добавлены.{% if registry_href %} Адрес можно уточнить в регистратуре.{% endif %}</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}
+
+{% block bottom_nav %}
+  {% if active_patient %}{% with variant="bottom" %}{% include "partials/patient_nav.html" %}{% endwith %}{% endif %}
+{% endblock %}
+
+{% block scripts %}
+  {% if faps %}
+  <script src="{{ url_for('static', path='js/help-map.js').include_query_params(v=static_version('js/help-map.js')) }}" defer></script>
+  {% endif %}
+{% endblock %}
