@@ -1,0 +1,70 @@
+{% set disclaimer = "Это справка, а не диагноз. Обсудите с врачом" %}
+
+<div aria-live="polite">
+  {% if history %}
+  <ol class="assistant-thread" aria-label="Сообщения">
+    {% for exchange in history %}
+    <li class="assistant-exchange">
+      <div class="assistant-message assistant-message--question">
+        <p class="assistant-message__label">Вы</p>
+        <p class="assistant-message__text">{{ exchange.question }}</p>
+      </div>
+      <div class="assistant-message">
+        <p class="assistant-message__label">Помощник</p>
+        <p class="assistant-message__text">{{ exchange.answer }}</p>
+        <p class="assistant-message__note">{{ disclaimer }}</p>
+      </div>
+    </li>
+    {% endfor %}
+  </ol>
+  {% elif available and not immediate_answer and not notice %}
+  <p class="assistant-example">Например: «Как подготовиться к приёму у врача?»</p>
+  {% endif %}
+
+  {% if immediate_answer %}
+  <div class="assistant-message{% if urgent %} assistant-message--urgent{% endif %}" role="status">
+    <p class="assistant-message__label">Помощник</p>
+    <p class="assistant-message__text">{{ immediate_answer }}</p>
+    {% if urgent %}{% include "partials/help_sos.html" %}{% endif %}
+    <p class="assistant-message__note">{{ disclaimer }}</p>
+  </div>
+  {% endif %}
+  {% if notice %}<p role="status">{{ notice }}</p>{% endif %}
+  <div id="assistant-recovery"></div>
+</div>
+
+{% if available %}
+<form class="assistant-form" action="/assistant" method="post" hx-post="/assistant"
+      hx-target="#assistant-chat" hx-swap="innerHTML show:#assistant-end:bottom"
+      hx-sync="#assistant-chat:drop" hx-disabled-elt="find button, find textarea">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <label for="assistant-question">Ваш вопрос</label>
+  <p class="assistant-privacy" id="assistant-privacy">
+    Вопрос и последние сообщения из переписки отправляются в Яндекс. Не пишите ФИО, телефон и номера документов.
+  </p>
+  <textarea class="form-control" id="assistant-question" name="question" rows="3"
+            maxlength="{{ max_question_length }}" required autocomplete="off"
+            aria-describedby="assistant-privacy{% if error %} assistant-error{% endif %}">{{ question | default("") }}</textarea>
+  {% if error %}<p class="assistant-status" id="assistant-error" role="alert">{{ error }}</p>{% endif %}
+  <button class="btn-main" type="submit">Спросить</button>
+  <p class="assistant-status assistant-wait" role="status">Помощник пишет ответ…</p>
+</form>
+{% else %}
+<p class="assistant-status" id="assistant-question" role="status">
+  {{ error or "Помощник пока недоступен. Если у вас есть вопрос о здоровье, обратитесь к врачу." }}
+</p>
+{% endif %}
+<div id="assistant-end" aria-hidden="true"></div>
+
+{% if history %}
+<details class="assistant-clear">
+  <summary>Очистить переписку</summary>
+  <form action="/assistant/clear" method="post" hx-post="/assistant/clear"
+        hx-target="#assistant-chat" hx-swap="innerHTML show:#assistant-end:bottom"
+        hx-sync="#assistant-chat:drop" hx-disabled-elt="find button">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <p>Удалить переписку из «Пульса»? Восстановить её не получится.</p>
+    <button class="btn-ghost" type="submit">Удалить переписку</button>
+  </form>
+</details>
+{% endif %}

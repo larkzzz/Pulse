@@ -21,14 +21,23 @@ SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)
 
 
 def migrate_schema(target_engine=engine) -> None:
-    """Добавляет поля новых этапов в уже существующую базу разработки."""
-    if "user_id" in {column["name"] for column in inspect(target_engine).get_columns("doctors")}:
-        return
+    """Обновляет уже существующую схему после создания новых таблиц."""
     with target_engine.begin() as connection:
-        connection.execute(text("ALTER TABLE doctors ADD COLUMN user_id INTEGER"))
-        connection.execute(text(
-            "CREATE UNIQUE INDEX IF NOT EXISTS ix_doctors_user_id ON doctors (user_id)"
-        ))
+        schema = inspect(connection)
+        if "user_id" not in {column["name"] for column in schema.get_columns("doctors")}:
+            connection.execute(text("ALTER TABLE doctors ADD COLUMN user_id INTEGER"))
+            connection.execute(text(
+                "CREATE UNIQUE INDEX IF NOT EXISTS ix_doctors_user_id ON doctors (user_id)"
+            ))
+        if connection.dialect.name == "sqlite" and schema.has_table("assistant_chats"):
+            # В SQLite разработки внешние ключи не включены. PostgreSQL использует ON DELETE CASCADE.
+            connection.exec_driver_sql("""
+                CREATE TRIGGER IF NOT EXISTS delete_assistant_chat_with_patient
+                AFTER DELETE ON users
+                BEGIN
+                    DELETE FROM assistant_chats WHERE patient_id = OLD.id;
+                END
+            """)
 
 
 def get_db() -> Generator[Session, None, None]:

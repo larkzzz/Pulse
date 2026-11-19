@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}Помощник · Пульс{% endblock %}
+{% block body_class %}patient{% endblock %}
+{% block main_class %}patient-main assistant-main{% endblock %}
+{% block header %}{% include "partials/patient_header.html" %}{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <h1 class="page-head__title">Помощник</h1>
+</div>
+
+{# Не сохраняем переписку в истории HTMX на этом устройстве. #}
+<div class="assistant-layout" hx-history="false">
+  <section class="panel assistant-intro" aria-label="О помощнике">
+    <p>ИИ отвечает на общие вопросы о здоровье. Он может ошибаться и не заменяет врача.</p>
+    <p class="assistant-emergency">Нужна срочная помощь? <a href="tel:112">Позвонить 112</a></p>
+  </section>
+
+  <section id="assistant-chat" class="panel assistant-chat" aria-label="Переписка с помощником">
+    {% include "partials/assistant_chat.html" %}
+  </section>
+</div>
+{% endblock %}
+
+{% block bottom_nav %}{% with variant="bottom" %}{% include "partials/patient_nav.html" %}{% endwith %}{% endblock %}

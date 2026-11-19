@@ -13,7 +13,7 @@ from app import models
 from app.access import AccessDenied, AuthenticationRequired
 from app.config import BASE_DIR, settings
 from app.database import Base, SessionLocal, engine, migrate_schema
-from app.routers import admin, auth, cabinet, help, patient
+from app.routers import admin, assistant, auth, cabinet, help, patient
 from app.services.demo import seed_demo_data
 
 
@@ -55,3 +55,4 @@ app.include_router(patient.router)
 app.include_router(cabinet.router)
 app.include_router(admin.router)
 app.include_router(help.router)
+app.include_router(assistant.router)

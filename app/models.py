@@ -154,3 +154,11 @@ class Intake(Base):
     taken_at: Mapped[datetime] = mapped_column(DateTime)
 
     medication: Mapped[Medication] = relationship(back_populates="intakes")
+
+
+class AssistantChat(Base):
+    __tablename__ = "assistant_chats"
+
+    patient_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    revision: Mapped[int] = mapped_column(default=0)
+    exchanges: Mapped[list[dict[str, str]]] = mapped_column(JSON, default=list)

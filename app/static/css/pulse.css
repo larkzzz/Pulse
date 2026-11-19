@@ -649,6 +649,54 @@ a.urgent__note { background: var(--pulse-surface); }
   .help-grid { grid-template-columns: minmax(0, 4fr) minmax(0, 7fr); gap: 24px; }
 }
 
+/* ---------- Помощник ---------- */
+
+.patient-main.assistant-main { max-width: min(var(--pulse-page), 800px); }
+.assistant-layout, .assistant-form, .assistant-thread, .assistant-exchange {
+  display: grid; gap: 12px; min-width: 0;
+}
+.assistant-intro, .assistant-chat { overflow-wrap: anywhere; }
+.assistant-intro p, .assistant-chat p { margin: 0; }
+.assistant-intro .assistant-emergency { margin: 8px 0 0; color: var(--pulse-red); }
+.assistant-emergency a {
+  display: inline-flex; align-items: center; min-height: 48px;
+  color: var(--pulse-red); font-weight: 700;
+}
+.assistant-chat { display: grid; gap: 16px; }
+.assistant-example, .assistant-privacy, .assistant-message__note { color: var(--pulse-muted); }
+.assistant-form { gap: 8px; }
+.assistant-form label { font-weight: 700; }
+.assistant-form textarea {
+  min-height: 104px; font-size: 1rem; resize: vertical; border: 2px solid var(--pulse-border);
+  border-radius: 12px;
+}
+.assistant-form textarea:focus { border-color: var(--pulse-blue); }
+.assistant-form button:disabled { opacity: .75; }
+.assistant-thread { list-style: none; padding: 0; margin: 0; gap: 20px; }
+.assistant-message {
+  display: grid; gap: 6px;
+  padding: 12px 14px; border-radius: 14px; border: 1px solid var(--pulse-border);
+}
+.assistant-message--question { background: var(--pulse-blue-soft); border-color: transparent; }
+.assistant-thread + .assistant-message { margin-top: 16px; }
+.assistant-message--urgent { background: var(--pulse-red-soft); }
+.assistant-message__label { font-weight: 700; }
+.assistant-message__text { white-space: pre-wrap; }
+.assistant-status { color: var(--pulse-muted); }
+.assistant-wait { display: none; }
+.assistant-form.htmx-request .assistant-wait { display: block; }
+#assistant-end { height: 1px; scroll-margin-bottom: calc(var(--pulse-nav-h) + 16px); }
+#assistant-question { scroll-margin-top: 88px; }
+#assistant-recovery { scroll-margin-top: 88px; }
+#assistant-recovery:not(:empty) { margin-top: 12px; }
+#assistant-recovery a { margin-top: 8px; }
+.assistant-clear summary { min-height: 48px; padding: 10px 0; color: var(--pulse-muted); font-weight: 600; }
+.assistant-clear form { display: grid; gap: 8px; }
+
+@media (min-width: 992px) {
+  #assistant-end { scroll-margin-bottom: 16px; }
+}
+
 /* ---------- Кабинет администратора ---------- */
 
 .admin { overflow-wrap: anywhere; }

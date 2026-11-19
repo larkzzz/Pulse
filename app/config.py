@@ -31,6 +31,7 @@ class Settings:
     # Yandex Cloud: YandexGPT (ИИ-помощник) и SpeechKit (озвучка напоминаний)
     yandex_folder_id: str = _env("YANDEX_FOLDER_ID")
     yandex_api_key: str = _env("YANDEX_API_KEY")
+    yandex_gpt_model: str = _env("YANDEX_GPT_MODEL")
 
     # Яндекс Карты (JavaScript API) — только встроенная карта ФАП; маршрут работает без ключа
     yandex_maps_api_key: str = _env("YANDEX_MAPS_API_KEY")
