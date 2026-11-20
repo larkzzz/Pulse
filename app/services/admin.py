@@ -1,15 +1,14 @@
 """Операции кабинета администратора."""
 import re
-import secrets
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 
 from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.models import Doctor, Drug, Fap, InviteCode, RegistrationRequest, User
+from app.services import invites
 from app.services.help import has_demo_fap_data, is_demo_fap, phone_href
-from app.services.invites import invite_status, transition_invite
 from app.services.security import hash_password
 
 
@@ -57,52 +56,20 @@ def create_invite(
     db: Session, doctor_id: int, patient_hint: str, today: date | None = None
 ) -> InviteCode:
     doctor = _active_doctor(db, doctor_id, "Выберите врача с действующей учётной записью")
-    patient_hint = patient_hint.strip()
-    if not patient_hint:
-        raise AdminError("Напишите фамилию и инициалы пациента")
-    if len(patient_hint) > 200:
-        raise AdminError("Фамилия и инициалы должны быть не длиннее 200 знаков")
-
-    today = today or date.today()
-    for _ in range(20):
-        code = f"PLS-{secrets.randbelow(10000):04d}"
-        lookup = select(InviteCode.id).where(InviteCode.code == code)
-        if db.scalar(lookup) is not None:
-            continue
-        invite = InviteCode(
-            code=code,
-            doctor_id=doctor.id,
-            patient_hint=patient_hint,
-            issued_at=today,
-            expires_at=today + timedelta(days=30),
-        )
-        db.add(invite)
-        try:
-            db.commit()
-        except IntegrityError:
-            db.rollback()
-            if db.scalar(lookup) is None:
-                raise
-        else:
-            return invite
-    raise AdminError("Не удалось выдать новый код. Попробуйте ещё раз")
-
-
-def list_invites(db: Session) -> list[tuple[InviteCode, str]]:
-    invites = db.scalars(
-        select(InviteCode).order_by(InviteCode.issued_at.desc(), InviteCode.id.desc())
-    )
-    today = date.today()
-    return [(invite, invite_status(invite, today)) for invite in invites]
+    try:
+        return invites.issue_invite(db, doctor.id, patient_hint, today)
+    except invites.InviteError as exc:
+        raise AdminError(str(exc)) from exc
 
 
 def revoke_invite(db: Session, invite_id: int) -> InviteCode:
     invite = db.get(InviteCode, invite_id)
     if not invite:
         raise AdminError("Код приглашения не найден")
-    if not transition_invite(db, invite_id, "revoked"):
-        raise AdminError("Можно отменить только действующий код")
-    db.commit()
+    try:
+        invites.revoke_invite(db, invite)
+    except invites.InviteError as exc:
+        raise AdminError(str(exc)) from exc
     return invite
 
 

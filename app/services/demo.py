@@ -1,21 +1,28 @@
-from datetime import date, datetime, time, timedelta
+from datetime import UTC, date, datetime, time, timedelta
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.models import Doctor, Drug, Intake, InviteCode, Medication, RegistrationRequest, User
+from app.models import Doctor, DoctorMessage, Drug, Intake, InviteCode, Medication, RegistrationRequest, User
 from app.services.security import hash_password
 
 DEMO_PASSWORD = "demo1234"
+DEMO_PATIENT = "galina.smirnova@mail.ru"
+DEMO_DOCTOR = "safin@pestrechi-crb.ru"
 
 
 def seed_demo_data(db: Session) -> None:
     if db.scalar(select(User.id).limit(1)):
         _upgrade_demo_data(db)
-        return
+    else:
+        _seed_users(db)
+    _seed_chat(db)
+    db.commit()
 
+
+def _seed_users(db: Session) -> None:
     safin_account = User(
-        email="safin@pestrechi-crb.ru", password_hash=hash_password(DEMO_PASSWORD),
+        email=DEMO_DOCTOR, password_hash=hash_password(DEMO_PASSWORD),
         role="doctor", last_name="Сафин", first_name="Ильдар", patronymic="Ринатович",
     )
     garipova_account = User(
@@ -32,7 +39,7 @@ def seed_demo_data(db: Session) -> None:
     db.flush()
 
     galina = User(
-        email="galina.smirnova@mail.ru",
+        email=DEMO_PATIENT,
         password_hash=hash_password(DEMO_PASSWORD),
         role="patient",
         status="active",
@@ -107,7 +114,6 @@ def seed_demo_data(db: Session) -> None:
         taken_at=datetime.combine(today, time(8, 5)),
     ))
     _seed_references(db)
-    db.commit()
 
 
 def _seed_references(db: Session) -> None:
@@ -121,7 +127,7 @@ def _seed_references(db: Session) -> None:
 def _upgrade_demo_data(db: Session) -> None:
     accounts = (
         (
-            "Сафин Ильдар Ринатович", "safin@pestrechi-crb.ru",
+            "Сафин Ильдар Ринатович", DEMO_DOCTOR,
             ("Сафин", "Ильдар", "Ринатович"),
         ),
         (
@@ -143,4 +149,25 @@ def _upgrade_demo_data(db: Session) -> None:
                 doctor.account = account
             account.last_name, account.first_name, account.patronymic = names
     _seed_references(db)
-    db.commit()
+
+
+def _seed_chat(db: Session) -> None:
+    patient = db.scalar(select(User).where(User.email == DEMO_PATIENT, User.role == "patient"))
+    doctor = patient.doctor.account if patient and patient.doctor else None
+    if not doctor or doctor.email != DEMO_DOCTOR:
+        return
+    if db.scalar(select(DoctorMessage.id).where(DoctorMessage.patient_id == patient.id).limit(1)):
+        return
+    now = datetime.now(UTC).replace(tzinfo=None)
+    db.add_all([
+        DoctorMessage(
+            patient_id=patient.id, sender_id=patient.id, sender_role="patient",
+            submission_id="0" * 32, sent_at=now - timedelta(minutes=10),
+            text="Добрый день! Где посмотреть расписание приёма лекарств?",
+        ),
+        DoctorMessage(
+            patient_id=patient.id, sender_id=doctor.id, sender_role="doctor",
+            submission_id="1" * 32, sent_at=now - timedelta(minutes=5),
+            text="Здравствуйте! Расписание есть на главной странице «Пульса».",
+        ),
+    ])

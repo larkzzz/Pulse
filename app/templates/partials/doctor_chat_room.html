@@ -1,0 +1,8 @@
+<div class="doctor-chat-room" hx-ext="ws" ws-connect="/doctor-chat/ws/{{ patient_id }}?doctor_id={{ channel_doctor_id }}">
+  <noscript><p>Чтобы отправлять сообщения, включите JavaScript в браузере.</p></noscript>
+  {% include "partials/doctor_chat_composer.html" %}
+  <div id="doctor-chat-status" class="doctor-chat-status" role="status">Подключаем чат…</div>
+  <div id="doctor-chat-thread" class="doctor-chat-thread">
+    {% include "partials/doctor_chat_thread.html" %}
+  </div>
+</div>

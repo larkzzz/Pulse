@@ -87,13 +87,13 @@ def test_invite_list_shows_expiration_without_modifying_code(admin_client):
 
 def test_create_invite_retries_taken_code(admin_client, monkeypatch):
     candidates = iter((4827, 8001, 8001, 8002))
-    monkeypatch.setattr(admin_service.secrets, "randbelow", lambda _: next(candidates))
+    monkeypatch.setattr("app.services.invites.secrets.randbelow", lambda _: next(candidates))
     form = {"doctor_id": "1", "patient_hint": "Тестовый пациент"}
     first = admin_client.post("/admin/invites", data=form)
     second = admin_client.post("/admin/invites", data=form)
     assert "Создан код PLS-8001" in first.text
     assert "Создан код PLS-8002" in second.text
-    monkeypatch.setattr(admin_service.secrets, "randbelow", lambda _: 4827)
+    monkeypatch.setattr("app.services.invites.secrets.randbelow", lambda _: 4827)
     assert "Не удалось выдать новый код" in admin_client.post("/admin/invites", data=form).text
 
 

@@ -1,0 +1,11 @@
+{% if not room %}
+  <div id="doctor-chat-thread" hx-swap-oob="innerHTML"></div>
+  <div id="doctor-chat-status" hx-swap-oob="innerHTML">Доступ к чату изменился. Скопируйте черновик и обновите страницу.</div>
+{% else %}
+  <div id="doctor-chat-thread" hx-swap-oob="innerHTML">
+    {% include "partials/doctor_chat_thread.html" %}
+  </div>
+  <div id="doctor-chat-status" hx-swap-oob="innerHTML">
+    {% if connected %}Чат подключён.{% else %}Переписка обновлена.{% endif %}
+  </div>
+{% endif %}

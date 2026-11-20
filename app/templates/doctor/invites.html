@@ -1,0 +1,53 @@
+{% extends "doctor/layout.html" %}
+{% set page_title = "Коды приглашения" %}
+{% block title %}Коды приглашения · Пульс{% endblock %}
+
+{% block doctor_content %}
+  {% if notice %}<p class="admin-notice" role="status">{{ notice }}</p>{% endif %}
+  {% if error %}<p class="form-alert admin-error" role="alert">{{ error }}</p>{% endif %}
+  <section class="panel doctor-invites" aria-labelledby="doctor-invite-title">
+    <h2 id="doctor-invite-title" class="panel__title">Выдать новый код</h2>
+    <p class="panel__hint">Код действует 30 дней. Зарегистрироваться по нему можно только один раз.</p>
+    <form class="admin-form doctor-invite-form" method="post" action="/doctor/invites">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <div class="field">
+        <label for="doctor-invite-patient">ФИО пациента</label>
+        <input class="admin-input" id="doctor-invite-patient" name="patient_hint" value="{{ patient_hint | default('') }}"
+               placeholder="Иванов Пётр Сергеевич" maxlength="200" required>
+      </div>
+      <button class="btn-main admin-submit" type="submit">Выдать код</button>
+    </form>
+  </section>
+  <section class="panel doctor-invites" aria-labelledby="doctor-invites-title">
+    <h2 id="doctor-invites-title" class="panel__title">Мои коды</h2>
+    {% if invites %}
+    <div class="admin-table-wrap">
+      <table class="admin-table">
+        <thead><tr><th>Код</th><th>Пациент</th><th>Выдан</th><th>Действует до</th><th>Статус</th><th>Действия</th></tr></thead>
+        <tbody>
+        {% for invite, status in invites %}
+          <tr>
+            <td data-label="Код"><strong class="admin-code">{{ invite.code }}</strong></td>
+            <td data-label="Пациент">{{ invite.patient_hint }}</td>
+            <td data-label="Выдан">{{ invite.issued_at.strftime('%d.%m.%Y') }}</td>
+            <td data-label="Действует до">{{ invite.expires_at.strftime('%d.%m.%Y') }}</td>
+            <td data-label="Статус"><span class="admin-status admin-status--{{ status }}">{{ statuses[status] }}</span></td>
+            <td data-label="Действия">
+              {% if status == "new" %}
+              <div class="doctor-invite-actions">
+                <a href="/doctor/invites/{{ invite.id }}/print">Листок для печати</a>
+                <form method="post" action="/doctor/invites/{{ invite.id }}/revoke">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                  <button class="btn-ghost admin-button" type="submit">Отменить код</button>
+                </form>
+              </div>
+              {% else %}—{% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}<p class="panel__empty">Выданных кодов пока нет.</p>{% endif %}
+  </section>
+{% endblock %}

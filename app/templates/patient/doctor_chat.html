@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Чат с врачом · Пульс{% endblock %}
+{% block body_class %}patient{% endblock %}
+{% block main_class %}patient-main doctor-chat-main{% endblock %}
+{% block header %}{% include "partials/patient_header.html" %}{% endblock %}
+{% block bottom_nav %}{% with variant="bottom" %}{% include "partials/patient_nav.html" %}{% endwith %}{% endblock %}
+
+{% block content %}
+<div class="doctor-chat-page" hx-history="false">
+  <div class="page-head doctor-chat-page__head">
+    <h1 class="page-head__title">Чат с врачом</h1>
+    {% if doctor %}<p>{{ doctor.name }} · {{ doctor.role }}</p>{% endif %}
+  </div>
+  <aside class="panel doctor-chat-urgent" aria-label="Срочная помощь">
+    <p>Чат не подходит для срочной помощи. Если есть угроза жизни, не ждите ответа.</p>
+    <a class="doctor-chat-urgent__link" href="tel:112">Позвонить 112</a>
+  </aside>
+  <section class="panel doctor-chat-panel" aria-label="Переписка с врачом">
+    {% if doctor %}
+      {% include "partials/doctor_chat_room.html" %}
+    {% else %}
+      <p>Сейчас написать врачу нельзя. Если нужно связаться с ним, обратитесь в регистратуру.</p>
+      <a class="doctor-history-link" href="/help#help-registry-title">Как связаться с регистратурой</a>
+      {% if messages %}{% include "partials/doctor_chat_thread.html" %}{% endif %}
+    {% endif %}
+  </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+  {% if doctor %}{% include "partials/doctor_chat_script.html" %}{% endif %}
+{% endblock %}

@@ -1,0 +1,30 @@
+<div id="doctor-chat-composer">
+  {% if read_only %}
+  <div class="doctor-chat-form">
+    <label for="doctor-chat-message">Ваш черновик</label>
+    <textarea class="admin-input" id="doctor-chat-message" rows="2" aria-describedby="doctor-chat-send-status" readonly>
+{{ draft }}</textarea>
+    <p id="doctor-chat-send-status" class="doctor-chat-status" role="status">{{ error }}</p>
+    {% if login_required %}
+      <a class="doctor-history-link" href="/login" target="_blank" rel="noopener">Войти снова (в новой вкладке)</a>
+    {% endif %}
+  </div>
+  {% else %}
+  <form class="doctor-chat-form" method="post" action="{{ message_action }}" hx-post="{{ message_action }}"
+        hx-target="#doctor-chat-composer" hx-swap="outerHTML" hx-sync="#doctor-chat-composer:drop"
+        hx-disabled-elt="find textarea, find button" hx-request='{"timeout": 12000}'>
+    <input type="hidden" name="submission_id" value="{{ submission_id }}">
+    <input type="hidden" name="doctor_id" value="{{ channel_doctor_id }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <label for="doctor-chat-message">Ваше сообщение</label>
+    <textarea class="admin-input" id="doctor-chat-message" name="message" rows="2"
+              maxlength="{{ max_message_length }}" aria-describedby="doctor-chat-status doctor-chat-send-status" required>
+{{ draft | default("") }}</textarea>
+    <button class="btn-main" type="submit">Отправить</button>
+    <p class="doctor-chat-send-wait" role="status">Отправляем сообщение…</p>
+    <div id="doctor-chat-send-status" class="doctor-chat-status" role="status">
+      {%- if error %}{{ error }}{% elif sent %}Сообщение отправлено.{% endif -%}
+    </div>
+  </form>
+  {% endif %}
+</div>

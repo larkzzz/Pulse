@@ -16,7 +16,7 @@ engine_options = {}
 if settings.database_url == "sqlite:///:memory:":
     engine_options["poolclass"] = StaticPool
 
-engine = create_engine(settings.database_url, connect_args=connect_args, **engine_options)
+engine = create_engine(settings.database_url, connect_args=connect_args, hide_parameters=True, **engine_options)
 SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)
 
 
@@ -36,6 +36,17 @@ def migrate_schema(target_engine=engine) -> None:
                 AFTER DELETE ON users
                 BEGIN
                     DELETE FROM assistant_chats WHERE patient_id = OLD.id;
+                END
+            """)
+        if (connection.dialect.name == "sqlite"
+                and schema.has_table("doctor_messages") and schema.has_table("login_sessions")):
+            connection.exec_driver_sql("""
+                CREATE TRIGGER IF NOT EXISTS delete_doctor_chat_with_user
+                AFTER DELETE ON users
+                BEGIN
+                    DELETE FROM doctor_messages WHERE patient_id = OLD.id;
+                    UPDATE doctor_messages SET sender_id = NULL WHERE sender_id = OLD.id;
+                    DELETE FROM login_sessions WHERE user_id = OLD.id;
                 END
             """)
 

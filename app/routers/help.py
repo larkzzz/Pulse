@@ -8,6 +8,7 @@ from app.access import AccessDenied, AuthenticationRequired
 from app.config import settings
 from app.database import get_db
 from app.models import Fap, User
+from app.services import sessions
 from app.services.help import coordinates, fap_coordinates, fap_map_link, is_demo_fap, nearest_fap, phone_href
 from app.web import templates
 
@@ -15,9 +16,8 @@ router = APIRouter(prefix="/help")
 
 
 def _help_patient(request: Request, db: Session = Depends(get_db)) -> User:
-    user_id = request.session.get("user_id")
-    user = db.get(User, user_id) if user_id else None
-    if not user or user.status not in ("active", "pending", "rejected"):
+    user = sessions.session_user(db, request.session, statuses=("active", "pending", "rejected"))
+    if not user:
         raise AuthenticationRequired
     if user.role != "patient":
         raise AccessDenied

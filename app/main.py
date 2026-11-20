@@ -13,8 +13,10 @@ from app import models
 from app.access import AccessDenied, AuthenticationRequired
 from app.config import BASE_DIR, settings
 from app.database import Base, SessionLocal, engine, migrate_schema
-from app.routers import admin, assistant, auth, cabinet, help, patient
+from app.routers import admin, assistant, auth, cabinet, doctor, doctor_chat, help, patient
+from app.services import chat_events
 from app.services.demo import seed_demo_data
+from app.services.sessions import MAX_AGE
 
 
 @asynccontextmanager
@@ -24,7 +26,8 @@ async def lifespan(_: FastAPI):
     if settings.is_dev:
         with SessionLocal() as db:
             seed_demo_data(db)
-    yield
+    async with chat_events.listen(engine):
+        yield
 
 
 app = FastAPI(title="Пульс", lifespan=lifespan)
@@ -32,6 +35,7 @@ app.add_middleware(
     SessionMiddleware,
     secret_key=settings.secret_key,
     session_cookie="pulse_session",
+    max_age=MAX_AGE,
     https_only=settings.app_env == "prod",
     same_site="lax",
 )
@@ -56,3 +60,5 @@ app.include_router(cabinet.router)
 app.include_router(admin.router)
 app.include_router(help.router)
 app.include_router(assistant.router)
+app.include_router(doctor.router)
+app.include_router(doctor_chat.router)

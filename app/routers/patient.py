@@ -3,39 +3,20 @@ from datetime import date, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse
-from sqlalchemy import or_, select
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.access import require_roles
 from app.database import get_db
 from app.models import Intake, Medication, User
-from app.services.intakes import day_summary, today_intakes, today_label
+from app.services.intakes import patient_day
 from app.web import templates
 
 router = APIRouter()
 
 
 def _home_context(db: Session, user: User) -> dict:
-    today = date.today()
-    medications = db.scalars(select(Medication).where(
-        Medication.user_id == user.id,
-        or_(Medication.until.is_(None), Medication.until >= today),
-    )).all()
-    schedule = [
-        {"id": med.id, "drug": med.drug, "dose": med.dose, "meal": med.meal, "times": med.times}
-        for med in medications
-    ]
-    taken = db.scalars(select(Intake).join(Medication).where(
-        Medication.user_id == user.id, Intake.intake_date == today
-    )).all()
-    taken_today = {(row.medication_id, row.time): row.taken_at.strftime("%H:%M") for row in taken}
-    intakes = today_intakes(schedule, taken_today)
-    return {
-        "patient": user,
-        "today": today_label(today),
-        "intakes": intakes,
-        **day_summary(intakes),
-    }
+    return {"patient": user, **patient_day(db, user.id, date.today())}
 
 
 @router.get("/", response_class=HTMLResponse)

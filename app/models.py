@@ -1,6 +1,6 @@
-from datetime import date, datetime
+from datetime import UTC, date, datetime, timedelta, timezone
 
-from sqlalchemy import JSON, Boolean, Date, DateTime, Float, ForeignKey, String, Text, UniqueConstraint
+from sqlalchemy import JSON, Boolean, Date, DateTime, Float, ForeignKey, Index, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -162,3 +162,31 @@ class AssistantChat(Base):
     patient_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
     revision: Mapped[int] = mapped_column(default=0)
     exchanges: Mapped[list[dict[str, str]]] = mapped_column(JSON, default=list)
+
+
+class LoginSession(Base):
+    __tablename__ = "login_sessions"
+
+    id: Mapped[str] = mapped_column(String(48), primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime, index=True)
+
+
+class DoctorMessage(Base):
+    __tablename__ = "doctor_messages"
+    __table_args__ = (
+        UniqueConstraint("sender_id", "submission_id"),
+        Index("ix_doctor_messages_patient_id_id", "patient_id", "id"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    patient_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    sender_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
+    sender_role: Mapped[str] = mapped_column(String(20))
+    submission_id: Mapped[str] = mapped_column(String(32))
+    text: Mapped[str] = mapped_column(Text)
+    sent_at: Mapped[datetime] = mapped_column(DateTime)
+
+    @property
+    def moscow_time(self) -> datetime:
+        return self.sent_at.replace(tzinfo=UTC).astimezone(timezone(timedelta(hours=3)))

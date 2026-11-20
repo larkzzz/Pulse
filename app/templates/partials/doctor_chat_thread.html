@@ -1,0 +1,19 @@
+{% if messages %}
+  <p class="doctor-chat-order">Новые сообщения выше · время московское</p>
+  <ol class="doctor-chat-messages" aria-label="Сообщения">
+    {% for message in messages %}
+      <li class="doctor-chat-message{% if message.sender_id == viewer_id %} doctor-chat-message--own{% endif %}">
+        <p class="doctor-chat-message__meta">
+          <strong>{% if message.sender_id == viewer_id %}Вы{% elif message.sender_role == "doctor" %}Врач{% else %}Пациент{% endif %}</strong>
+          <time datetime="{{ message.moscow_time.isoformat() }}">{{ message.moscow_time.strftime('%d.%m.%Y в %H:%M') }}</time>
+        </p>
+        <p class="doctor-chat-message__text">{{ message.text }}</p>
+      </li>
+    {% endfor %}
+  </ol>
+  {% if older %}
+    <a class="doctor-history-link" href="/doctor-chat/history/{{ patient_id }}?before={{ older }}">Более ранние сообщения</a>
+  {% endif %}
+{% else %}
+  <p class="panel__empty">Сообщений пока нет.</p>
+{% endif %}

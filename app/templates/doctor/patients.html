@@ -1,0 +1,61 @@
+{% extends "doctor/layout.html" %}
+{% set page_title = "Кабинет врача" %}
+{% block title %}Кабинет врача · Пульс{% endblock %}
+
+{% block doctor_content %}
+<div class="doctor-workspace">
+  <aside class="panel" aria-labelledby="doctor-patients-title">
+    <h2 id="doctor-patients-title" class="panel__title">Мои пациенты</h2>
+    {% if patients %}
+      <ul class="doctor-patient-list">
+        {% for item in patients %}
+        <li>
+          <a class="doctor-patient-link{% if item.id == patient.id %} is-active{% endif %}"
+             href="/doctor/patients/{{ item.id }}"{% if item.id == patient.id %} aria-current="true"{% endif %}>
+            {{ item.last_name }} {{ item.first_name }} {{ item.patronymic }}
+          </a>
+        </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="panel__empty">За вами пока нет закреплённых пациентов.</p>
+    {% endif %}
+  </aside>
+  {% if patient %}
+    <section class="panel doctor-schedule" aria-labelledby="doctor-patient-title">
+      <h2 id="doctor-patient-title" class="panel__title">{{ patient.last_name }} {{ patient.first_name }} {{ patient.patronymic }}</h2>
+      <h3>Приём лекарств сегодня</h3>
+      <p class="doctor-muted">{{ today }}</p>
+      {% if intakes %}
+        <p class="doctor-schedule__summary">Отмечено приёмов: <strong>{{ taken_count }} из {{ total_count }}</strong></p>
+        <ul class="doctor-intakes">
+          {% for intake in intakes %}
+            <li>
+              <strong>{{ intake.time }}</strong>
+              <div>
+                <strong>{{ intake.drug }}</strong>
+                <span class="doctor-muted">{{ intake.dose }} · {{ intake.meal }}</span>
+                {% if intake.taken_at %}
+                  <span class="doctor-intake-mark">Принято в {{ intake.taken_at }}</span>
+                {% else %}
+                  <span class="doctor-muted">Нет отметки</span>
+                {% endif %}
+              </div>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="panel__empty">На сегодня нет лекарств в расписании.</p>
+      {% endif %}
+    </section>
+    <section class="panel doctor-chat-panel" aria-labelledby="doctor-chat-title">
+      <h2 id="doctor-chat-title" class="panel__title">Чат с пациентом</h2>
+      {% include "partials/doctor_chat_room.html" %}
+    </section>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+  {% if patient %}{% include "partials/doctor_chat_script.html" %}{% endif %}
+{% endblock %}

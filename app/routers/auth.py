@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.database import get_db
 from app.models import RegistrationRequest, User
+from app.services import sessions
 from app.services.accounts import oms_is_valid, validate_profile
 from app.services.help import phone_href
 from app.services.invites import code_status, limited_code_status, normalize_code, transition_invite
@@ -23,11 +24,6 @@ ROLE_HOME = {"patient": "/", "doctor": "/doctor", "admin": "/admin"}
 
 def _auth_context(**extra) -> dict:
     return {"form": {}, "errors": {}, **extra}
-
-
-def _start_session(request: Request, user: User) -> None:
-    request.session.clear()
-    request.session["user_id"] = user.id
 
 
 def _code_status(request: Request, db: Session, raw: str):
@@ -73,15 +69,16 @@ def login(
         return templates.TemplateResponse(
             request, "partials/login_form.html", _auth_context(form={"email": email}, errors=errors)
         )
-    _start_session(request, user)
+    sessions.start(db, request.session, user.id)
     if user.status in ("pending", "rejected"):
         return htmx_redirect("/pending")
     return htmx_redirect(ROLE_HOME[user.role])
 
 
 @router.get("/logout")
-def logout(request: Request):
-    request.session.clear()
+def logout(request: Request, db: Session = Depends(get_db)):
+    sessions.end(db, request.session)
+    db.commit()
     return RedirectResponse("/login", status_code=303)
 
 
@@ -90,7 +87,9 @@ def register_page(request: Request, code: str = "", db: Session = Depends(get_db
     ctx = _auth_context(mode="code", form={"code": normalize_code(code)})
     if code:
         _, ctx["doctor"], ctx["code_error"] = _code_status(request, db, code)
-    return templates.TemplateResponse(request, "auth/register.html", ctx)
+    return templates.TemplateResponse(request, "auth/register.html", ctx, headers={
+        "Cache-Control": "no-store", "Referrer-Policy": "no-referrer",
+    })
 
 
 @router.get("/register/no-code", response_class=HTMLResponse)
@@ -173,8 +172,7 @@ def register(
                     errors={"code": error or "Код больше не действует. Попросите новый код в регистратуре"},
                 ),
             )
-    db.commit()
-    _start_session(request, user)
+    sessions.start(db, request.session, user.id)
     if mode == "request":
         return htmx_redirect("/pending")
     return htmx_redirect("/cabinet?welcome=1")
@@ -182,7 +180,7 @@ def register(
 
 @router.get("/pending", response_class=HTMLResponse)
 def pending_page(request: Request, db: Session = Depends(get_db)):
-    user = db.get(User, request.session.get("user_id", 0))
+    user = sessions.session_user(db, request.session, statuses=("active", "pending", "rejected"))
     if user and user.role == "patient" and user.status == "active":
         return RedirectResponse("/", status_code=303)
     registration = user.registration_request if user else None

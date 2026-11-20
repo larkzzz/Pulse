@@ -1,9 +1,11 @@
 """Коды приглашения: пациент регистрируется по коду, который выдал врач."""
+import secrets
 from datetime import UTC, date, datetime, timedelta
 
 from sqlalchemy import case, delete, select, update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.models import InviteAttempt, InviteCode
@@ -14,6 +16,16 @@ BLOCKED_MESSAGE = (
     "Слишком много неверных попыток. Попробуйте через 15 минут "
     "или позвоните в регистратуру"
 )
+INVITE_STATUSES = {
+    "new": "Действует",
+    "used": "Использован",
+    "revoked": "Отменён",
+    "expired": "Истёк",
+}
+
+
+class InviteError(ValueError):
+    pass
 
 
 def normalize_code(raw: str) -> str:
@@ -38,6 +50,51 @@ def transition_invite(db: Session, invite_id: int, status: str, **changes) -> bo
         .values(status=status, **changes)
     )
     return result.rowcount == 1
+
+
+def issue_invite(db: Session, doctor_id: int, patient_hint: str, today: date | None = None) -> InviteCode:
+    patient_hint = patient_hint.strip()
+    if not patient_hint:
+        raise InviteError("Напишите фамилию и инициалы пациента или его полное имя")
+    if len(patient_hint) > 200:
+        raise InviteError("Имя пациента должно быть не длиннее 200 знаков")
+    if "\0" in patient_hint:
+        raise InviteError("Проверьте имя пациента")
+
+    today = today or date.today()
+    for _ in range(20):
+        code = f"PLS-{secrets.randbelow(10000):04d}"
+        lookup = select(InviteCode.id).where(InviteCode.code == code)
+        if db.scalar(lookup) is not None:
+            continue
+        invite = InviteCode(
+            code=code, doctor_id=doctor_id, patient_hint=patient_hint,
+            issued_at=today, expires_at=today + timedelta(days=30),
+        )
+        db.add(invite)
+        try:
+            db.commit()
+        except IntegrityError:
+            db.rollback()
+            if db.scalar(lookup) is None:
+                raise
+        else:
+            return invite
+    raise InviteError("Не удалось выдать новый код. Попробуйте ещё раз")
+
+
+def list_invites(db: Session, doctor_id: int | None = None) -> list[tuple[InviteCode, str]]:
+    query = select(InviteCode).order_by(InviteCode.issued_at.desc(), InviteCode.id.desc())
+    if doctor_id is not None:
+        query = query.where(InviteCode.doctor_id == doctor_id)
+    today = date.today()
+    return [(invite, invite_status(invite, today)) for invite in db.scalars(query)]
+
+
+def revoke_invite(db: Session, invite: InviteCode) -> None:
+    if not transition_invite(db, invite.id, "revoked"):
+        raise InviteError("Можно отменить только действующий код")
+    db.commit()
 
 
 def check_code(raw: str, invite, doctor) -> str:

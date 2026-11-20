@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models import User
+from app.services import sessions
 
 
 class AuthenticationRequired(Exception):
@@ -14,9 +15,8 @@ class AccessDenied(Exception):
 
 
 def get_current_user(request: Request, db: Session = Depends(get_db)) -> User:
-    user_id = request.session.get("user_id")
-    user = db.get(User, user_id) if user_id else None
-    if not user or user.status != "active":
+    user = sessions.session_user(db, request.session)
+    if not user:
         raise AuthenticationRequired
     return user
 

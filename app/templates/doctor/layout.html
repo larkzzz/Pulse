@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block body_class %}doctor{% endblock %}
+{% block main_class %}doctor-main{% endblock %}
+{% block header %}{% include "partials/doctor_header.html" %}{% endblock %}
+
+{% block content %}
+<div class="doctor-page" hx-history="false">
+  <div class="doctor-page__head">
+    <div>
+      <h1 class="page-head__title">{{ page_title }}</h1>
+      <p>{{ doctor.name }} · {{ doctor.role }}</p>
+    </div>
+    <nav class="admin-subnav doctor-nav" aria-label="Разделы кабинета">
+      <a href="/doctor" {% if active_section == "patients" %}class="is-active" aria-current="page"{% endif %}>Пациенты</a>
+      <a href="/doctor/invites" {% if active_section == "invites" %}class="is-active" aria-current="page"{% endif %}>Коды приглашения</a>
+    </nav>
+  </div>
+  {% block doctor_content %}{% endblock %}
+</div>
+{% endblock %}

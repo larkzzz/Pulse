@@ -211,6 +211,23 @@ def test_logout_clears_session(patient_client):
     assert patient_client.get("/", follow_redirects=False).status_code == 303
 
 
+@pytest.mark.parametrize(("email", "routes"), [
+    ("galina.smirnova@mail.ru", ["/", "/cabinet", "/assistant", "/help", "/doctor-chat"]),
+    ("admin@pestrechi-crb.ru", ["/admin/requests", "/admin/patients", "/admin/invites"]),
+    ("petrov@mail.ru", ["/help"]),
+])
+def test_logged_out_cookie_does_not_open_protected_pages(client, email, routes):
+    client.post("/login", data={"email": email, "password": DEMO_PASSWORD})
+    cookie = client.cookies["pulse_session"]
+    assert all(client.get(route, follow_redirects=False).status_code == 200 for route in routes)
+    client.get("/logout")
+    headers = {"Cookie": f"pulse_session={cookie}"}
+    for route in routes:
+        response = client.get(route, headers=headers, follow_redirects=False)
+        assert response.status_code == 303 and response.headers["location"] == "/login"
+    assert 'href="/help"' not in client.get("/pending", headers=headers).text
+
+
 def _profile(**extra):
     return {"last_name": "Иванов", "first_name": "Пётр", "birth_date": "1948-05-02",
             "phone": "+7 917 111-22-33", "email": "ivanov@mail.ru",

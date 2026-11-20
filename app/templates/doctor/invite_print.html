@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Приглашение в Пульс · Листок для печати{% endblock %}
+{% block body_class %}doctor doctor-print{% endblock %}
+{% block main_class %}doctor-print-main{% endblock %}
+{% block header %}{% include "partials/doctor_header.html" %}{% endblock %}
+
+{% block content %}
+<div hx-history="false">
+  <div class="doctor-print-actions">
+    <a class="doctor-history-link" href="/doctor/invites">К списку кодов</a>
+    <p>Для печати нажмите <kbd>Ctrl</kbd> + <kbd>P</kbd> или выберите «Печать» в меню браузера.</p>
+  </div>
+  <article class="panel doctor-print-card" aria-labelledby="doctor-print-title">
+    <h1 id="doctor-print-title">Приглашение в «Пульс»</h1>
+    <p>ГАУЗ «Пестречинская ЦРБ»</p>
+    <p>Ваш врач: <strong>{{ doctor.name }}</strong></p>
+    <div class="doctor-print-code">
+      <img src="data:image/svg+xml;base64,{{ qr_svg }}" width="184" height="184" alt="QR-код для регистрации">
+      <div>
+        <p>Код приглашения</p>
+        <strong class="doctor-print-code__value">{{ invite.code }}</strong>
+        <p>Действует до {{ invite.expires_at.strftime('%d.%m.%Y') }} включительно</p>
+      </div>
+    </div>
+    <p>Наведите камеру телефона на QR-код и откройте ссылку. Код уже будет введён.</p>
+    <p>Или откройте <a href="{{ registration_url }}">регистрацию</a> на сайте <strong>{{ base_url }}</strong> и введите код вручную.</p>
+    <p>Используйте этот код один раз и не передавайте его посторонним.</p>
+  </article>
+</div>
+{% endblock %}

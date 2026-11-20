@@ -8,17 +8,12 @@ from app.database import get_db
 from app.models import User
 from app.services import admin as admin_service
 from app.services.admin import AdminError
+from app.services.invites import INVITE_STATUSES, list_invites
 from app.web import templates
 
 router = APIRouter(prefix="/admin")
 admin_required = require_roles("admin")
 
-INVITE_STATUSES = {
-    "new": "Действует",
-    "used": "Использован",
-    "revoked": "Отменён",
-    "expired": "Истёк",
-}
 REQUEST_STATUSES = {
     "pending": "На проверке",
     "approved": "Подтверждена",
@@ -46,7 +41,7 @@ def _render(request: Request, db: Session, section: str, **extra):
     }
     if section == "invites":
         context.update(
-            invites=admin_service.list_invites(db),
+            invites=list_invites(db),
             doctors=admin_service.active_doctors(db),
             invite_statuses=INVITE_STATUSES,
         )
